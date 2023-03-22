@@ -163,7 +163,7 @@
   <string name="skip_button_label">Atla</string>
   <!--contacts  upload-->
   <!--Camera Upload Preference-->
-  <string name="settings_camera_upload_info_title">Kamera Fotoğrafı Yükle</string>
+  <string name="settings_upload_info_title">Kamera Fotoğrafı Yükle</string>
   <!--Camera Upload Configuration View-->
   <!--Camera Sync-->
   <string name="settings_about_title">HAKKINDA</string>

@@ -1,17 +1,13 @@
 package com.seafile.seadroid2.account;
 
-import android.content.ContentResolver;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.google.common.collect.Lists;
-import com.seafile.seadroid2.SettingsManager;
-import com.seafile.seadroid2.cameraupload.CameraUploadManager;
+import com.seafile.seadroid2.upload.UploadManager;
 import com.seafile.seadroid2.data.ServerInfo;
 
 import java.util.List;
@@ -144,21 +140,6 @@ public class AccountDBHelper extends SQLiteOpenHelper {
 
         Log.i(DEBUG_TAG, "Migrating seafile accounts into Android account store (upgrade)");
 
-        SharedPreferences sharedPref = context.getSharedPreferences(AccountManager.SHARED_PREF_NAME, Context.MODE_PRIVATE);
-        SharedPreferences settingsSharedPref = PreferenceManager.getDefaultSharedPreferences(context);
-
-        Account cameraAccount = null;
-        String cameraName = sharedPref.getString(SettingsManager.SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_NAME, null);
-        String cameraServer = sharedPref.getString(SettingsManager.SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_SERVER, null);
-        String cameraEmail = sharedPref.getString(SettingsManager.SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_EMAIL, null);
-        String cameraToken = sharedPref.getString(SettingsManager.SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_TOKEN, null);
-        if (settingsSharedPref.getBoolean(SettingsManager.CAMERA_UPLOAD_SWITCH_KEY, false) && cameraEmail != null
-                && cameraServer != null && cameraToken != null ) {
-
-            // on this account camera upload was done previously
-            cameraAccount = new Account(cameraName, cameraServer, cameraEmail, cameraToken, false);
-        }
-
         for (Account account: getAccountList(db)) {
             Log.d(DEBUG_TAG, "Migrating seafile account: " + account);
 
@@ -179,12 +160,11 @@ public class AccountDBHelper extends SQLiteOpenHelper {
             }
 
             // MIGRATE camera sync settings
-            if (cameraAccount != null && cameraAccount.equals(account)) {
+            if (UploadManager.isEnableCloudUploadSync(account, UploadManager.ANY_SYNC)) {
                 Log.d(DEBUG_TAG, "enabling camera sync");
-                ContentResolver.setIsSyncable(account.getAndroidAccount(), CameraUploadManager.AUTHORITY, 1);
-                ContentResolver.setSyncAutomatically(account.getAndroidAccount(), CameraUploadManager.AUTHORITY, true);
+                UploadManager.enableAccountUpload(account);
             } else {
-                ContentResolver.setIsSyncable(account.getAndroidAccount(), CameraUploadManager.AUTHORITY, 0);
+                UploadManager.disableAccountUpload(account);
             }
             Log.d(DEBUG_TAG, "Finished migrating seafile account: " + account);
         }

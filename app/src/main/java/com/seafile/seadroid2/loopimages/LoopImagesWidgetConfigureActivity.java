@@ -35,7 +35,6 @@ public class LoopImagesWidgetConfigureActivity extends BaseActivity {
     private static final String PREF_PREFIX_KEY = "appwidget_";
     public static final int CHOOSE_LOOPIMAGES_REQUEST = 1;
 
-    public static SettingsManager settingsMgr = null;
     private static AccountManager accountManager = null;
     private static List<Account> accountList = null;
     private static Map<String, DataManager> dataManagerMap = null;
@@ -98,19 +97,13 @@ public class LoopImagesWidgetConfigureActivity extends BaseActivity {
 //        }
 //    }
 
-    static public SettingsManager getSettingsManager(){
-        if(settingsMgr == null){
-            settingsMgr = SettingsManager.instance();
-        }
-        return settingsMgr;
-    }
 
     public void saveDataPlanAllowed(boolean isAllowed) {
-        getSettingsManager().saveLoopImagesWidgetDataPlanAllowed(mAppWidgetId, isAllowed);
+        SettingsManager.instance().saveLoopImagesWidgetDataPlanAllowed(mAppWidgetId, isAllowed);
     }
 
     static public boolean getDataPlanAllowed(int mAppWidgetId) {
-        return getSettingsManager().getLoopImagesWidgetDataPlanAllowed(mAppWidgetId);
+        return SettingsManager.instance().getLoopImagesWidgetDataPlanAllowed(mAppWidgetId);
     }
 
     static public DirInfo getDirInfoFromStringList(Context context, List<String> dirInfo){
@@ -136,7 +129,7 @@ public class LoopImagesWidgetConfigureActivity extends BaseActivity {
 
     static public List<DirInfo> getDirInfo(Context context, int appWidgetId) {
         init(context);
-        List<String> dirInfoStrs = getSettingsManager().getLoopImagesWidgetDirInfo(appWidgetId);
+        List<String> dirInfoStrs = SettingsManager.instance().getLoopImagesWidgetDirInfo(appWidgetId);
         List<DirInfo> dirInfos = new ArrayList<DirInfo>();
         for(String info: dirInfoStrs){
             dirInfos.add(getDirInfoFromString(context, info));
@@ -145,13 +138,10 @@ public class LoopImagesWidgetConfigureActivity extends BaseActivity {
     }
 
     static public void deleteDirInfo(int appWidgetId) {
-        getSettingsManager().deleteLoopImagesWidgetInfo(appWidgetId);
+        SettingsManager.instance().deleteLoopImagesWidgetInfo(appWidgetId);
     }
 
     public static void init(Context context){
-        if(settingsMgr == null) {
-            settingsMgr = SettingsManager.instance();
-        }
 
         if(accountManager == null) {
             accountManager = new AccountManager(context);

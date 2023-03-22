@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
+import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.gesturelock.LockPatternUtils;
 import com.seafile.seadroid2.loopimages.DirInfo;
@@ -62,22 +63,41 @@ public final class SettingsManager {
 
     public static final String SHARED_PREF_STORAGE_DIR = PKG + ".storageId";
 
-    public static final String SHARED_PREF_CAMERA_UPLOAD_REPO_ID = PKG + ".camera.repoid";
-    public static final String SHARED_PREF_CAMERA_UPLOAD_REPO_NAME = PKG + ".camera.repoName";
-    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_EMAIL = PKG + ".camera.account.email";
-    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_NAME = PKG + ".camera.account.name";
-    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_SERVER = PKG + ".camera.account.server";
-    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_TOKEN = PKG + ".camera.account.token";
-    public static final String CAMERA_UPLOAD_SWITCH_KEY = "camera_upload_switch_key";
-    public static final String CAMERA_UPLOAD_REPO_KEY = "camera_upload_repo_key";
-    public static final String CAMERA_UPLOAD_ADVANCED_SCREEN_KEY = "screen_camera_upload_advanced_feature";
-    public static final String CAMERA_UPLOAD_ADVANCED_CATEGORY_KEY = "category_camera_upload_advanced_key";
-    public static final String CAMERA_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY = "allow_data_plan_switch_key";
-    public static final String CAMERA_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY = "allow_videos_upload_switch_key";
-    public static final String CAMERA_UPLOAD_BUCKETS_KEY = "camera_upload_buckets_key";
-    public static final String CAMERA_UPLOAD_CATEGORY_KEY = "category_camera_upload_key";
-    public static final String CAMERA_UPLOAD_CUSTOM_BUCKETS_KEY = "camera_upload_buckets_switch_key";
-    public static final String SHARED_PREF_CAMERA_UPLOAD_BUCKETS = PKG + ".camera.buckets";
+    public static final String SHARED_PREF_CLOUD_UPLOAD_REPO_ID = PKG + ".upload.repoid";
+    public static final String SHARED_PREF_CLOUD_UPLOAD_REPO_NAME = PKG + ".upload.repoName";
+    public static final String SHARED_PREF_CLOUD_UPLOAD_DATA_PATH = PKG + ".upload.dataPath";
+    public static final String SHARED_PREF_ALBUM_UPLOAD_BUCKETS = PKG + ".upload.album.buckets";
+
+//    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_EMAIL = PKG + ".camera.account.email";
+//    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_NAME = PKG + ".camera.account.name";
+//    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_SERVER = PKG + ".camera.account.server";
+//    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_TOKEN = PKG + ".camera.account.token";
+//    public static final String CAMERA_UPLOAD_SWITCH_KEY = "camera_upload_switch_key";
+//    public static final String CAMERA_UPLOAD_REPO_KEY = "camera_upload_repo_key";
+//    public static final String CAMERA_UPLOAD_ADVANCED_SCREEN_KEY = "screen_camera_upload_advanced_feature";
+//    public static final String CAMERA_UPLOAD_ADVANCED_CATEGORY_KEY = "category_camera_upload_advanced_key";
+//    public static final String CAMERA_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY = "allow_data_plan_switch_key";
+//    public static final String CAMERA_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY = "allow_videos_upload_switch_key";
+//    public static final String CAMERA_UPLOAD_BUCKETS_KEY = "camera_upload_buckets_key";
+//    public static final String CAMERA_UPLOAD_CATEGORY_KEY = "category_camera_upload_key";
+//    public static final String CAMERA_UPLOAD_CUSTOM_BUCKETS_KEY = "camera_upload_buckets_switch_key";
+
+//    public static final String CAMERA_UPLOAD_STATE = "camera_upload_state";
+    public static final String CLOUD_UPLOAD_CATEGORY_KEY = "category_cloud_upload_key";
+    public static final String CLOUD_UPLOAD_SWITCH_KEY = "cloud_upload_switch_key";
+    public static final String CLOUD_UPLOAD_REPO_KEY = "cloud_upload_repo_key";
+    public static final String CLOUD_UPLOAD_ADVANCED_SCREEN_KEY = "screen_upload_advanced_feature";
+    public static final String CLOUD_UPLOAD_ADVANCED_CATEGORY_KEY = "category_upload_advanced_key";
+    public static final String CLOUD_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY = "allow_data_plan_switch_key";
+    public static final String CLOUD_UPLOAD_SYNC_TYPE_SWITCH_KEY = "cloud_upload_sync_type_switch_key";
+    public static final String ALBUM_UPLOAD_SWITCH_KEY = "album_upload_switch_key";
+    public static final String ALBUM_UPLOAD_ADVANCED_SCREEN_KEY = "album_upload_advanced_feature";
+    public static final String ALBUM_UPLOAD_ADVANCED_CATEGORY_KEY = "category_album_upload_advanced_key";
+    public static final String ALBUM_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY = "allow_videos_upload_switch_key";
+    public static final String ALBUM_UPLOAD_CUSTOM_BUCKETS_KEY = "album_upload_buckets_switch_key";
+    public static final String ALBUM_UPLOAD_BUCKETS_KEY = "album_upload_buckets_key";
+    public static final String CLOUD_UPLOAD_STATE = "cloud_upload_state";
+
     //contacts
     public static final String CONTACTS_UPLOAD_CATEGORY_KEY = "category_contacts_upload_key";
     public static final String CONTACTS_UPLOAD_SWITCH_KEY = "contacts_upload_switch_key";
@@ -94,7 +114,6 @@ public final class SettingsManager {
     public static final String SETTINGS_CACHE_SIZE_KEY = "settings_cache_info_key";
     public static final String SETTINGS_CLEAR_CACHE_KEY = "settings_clear_cache_key";
     public static final String SETTINGS_CACHE_DIR_KEY = "settings_cache_location_key";
-    public static final String CAMERA_UPLOAD_STATE = "camera_upload_state";
 
     // Sort files
     public static final String SORT_FILES_TYPE = "sort_files_type";
@@ -212,31 +231,6 @@ public final class SettingsManager {
         lock_timestamp = System.currentTimeMillis();
     }
 
-    public String getCameraUploadRepoName() {
-        return sharedPref.getString(SHARED_PREF_CAMERA_UPLOAD_REPO_NAME, null);
-    }
-
-    public String getContactsUploadRepoName() {
-        return sharedPref.getString(SHARED_PREF_CONTACTS_UPLOAD_REPO_NAME, null);
-    }
-
-    public void saveCameraUploadRepoInfo(String repoId, String repoName) {
-        editor.putString(SHARED_PREF_CAMERA_UPLOAD_REPO_ID, repoId);
-        editor.putString(SHARED_PREF_CAMERA_UPLOAD_REPO_NAME, repoName);
-        editor.commit();
-    }
-
-    public boolean checkCameraUploadNetworkAvailable() {
-        if (!Utils.isNetworkOn()) {
-            return false;
-        }
-        // user does not allow mobile connections
-        if (!Utils.isWiFiOn() && !isDataPlanAllowed()) {
-            return false;
-        }
-        // Wi-Fi or 2G/3G/4G connections available
-        return true;
-    }
 
     public void saveLoopImagesWidgetDataPlanAllowed(int appWidgetId, boolean isAllowed){
         settingsSharedPref.edit().putBoolean(LOOPIMAGES_REMOTE_LIBRARY_DATAPLAN + appWidgetId, isAllowed).commit();
@@ -263,20 +257,96 @@ public final class SettingsManager {
         }
     }
 
-    public boolean isDataPlanAllowed() {
-        return settingsSharedPref.getBoolean(CAMERA_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY, false);
+    public boolean getCloudUploadEnable(String accountSignature) {
+        return settingsSharedPref.getBoolean(CLOUD_UPLOAD_SWITCH_KEY + "-" + accountSignature, false);
     }
 
-    public boolean isVideosUploadAllowed() {
-        return settingsSharedPref.getBoolean(CAMERA_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY, false);
+    public void saveCloudUploadEnable(String accountSignature, boolean isEnabled) {
+        settingsSharedPref.edit().putBoolean(CLOUD_UPLOAD_SWITCH_KEY + "-" + accountSignature, isEnabled).commit();
     }
 
-    public void saveDataPlanAllowed(boolean isAllowed) {
-        settingsSharedPref.edit().putBoolean(CAMERA_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY, isAllowed).commit();
+    public String getCloudUploadRepoName(String accountSignature) {
+        return sharedPref.getString(SHARED_PREF_CLOUD_UPLOAD_REPO_NAME + "-" + accountSignature, null);
     }
 
-    public void saveVideosAllowed(boolean isVideosUploadAllowed) {
-        settingsSharedPref.edit().putBoolean(CAMERA_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY, isVideosUploadAllowed).commit();
+    public String getCloudUploadRepoId(String accountSignature) {
+        return sharedPref.getString(SettingsManager.SHARED_PREF_CLOUD_UPLOAD_REPO_ID + "-" + accountSignature, null);
+    }
+
+    public String getContactsUploadRepoId() {
+        return sharedPref.getString(SettingsManager.SHARED_PREF_CONTACTS_UPLOAD_REPO_ID, null);
+    }
+
+    public String getCloudUploadDataPath(String accountSignature) {
+        return sharedPref.getString(SHARED_PREF_CLOUD_UPLOAD_DATA_PATH + "-" + accountSignature, null);
+    }
+
+    public void saveCloudUploadRepoInfo(String accountSignature, String repoId, String repoName, String dataPath) {
+        editor.putString(SHARED_PREF_CLOUD_UPLOAD_REPO_ID + "-" + accountSignature, repoId);
+        editor.putString(SHARED_PREF_CLOUD_UPLOAD_REPO_NAME + "-" + accountSignature, repoName);
+        editor.putString(SHARED_PREF_CLOUD_UPLOAD_DATA_PATH + "-" + accountSignature, dataPath);
+        editor.commit();
+    }
+
+
+    public boolean checkUploadNetworkAvailable(String accountSignature) {
+        if (!Utils.isNetworkOn()) {
+            return false;
+        }
+        // user does not allow mobile connections
+        if (!Utils.isWiFiOn() && !isCloudUploadDataPlanAllowed(accountSignature)) {
+            return false;
+        }
+        // Wi-Fi or 2G/3G/4G connections available
+        return true;
+    }
+
+    public boolean isCloudUploadDataPlanAllowed(String accountSignature) {
+        return settingsSharedPref.getBoolean(CLOUD_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY + "-" + accountSignature, false);
+    }
+
+    public int getCloudUploadSyncState(String accountSignature){
+        return settingsSharedPref.getInt(CLOUD_UPLOAD_SYNC_TYPE_SWITCH_KEY + "-" + accountSignature, 0);
+    }
+
+    public boolean isCloudUploadSyncAllowed(String accountSignature, int syncType){
+        return (getCloudUploadSyncState(accountSignature)&syncType) > 0;
+    }
+
+    public boolean isAlbumVideosUploadAllowed(String accountSignature) {
+        return settingsSharedPref.getBoolean(ALBUM_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY + "-" + accountSignature, false);
+    }
+
+    public void saveCloudUploadDataPlanAllowed(String accountSignature, boolean isAllowed) {
+        settingsSharedPref.edit().putBoolean(CLOUD_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY + "-" + accountSignature, isAllowed).commit();
+    }
+
+    public void saveCloudUploadSyncState(String accountSignature, int syncState) {
+        settingsSharedPref.edit().putInt(CLOUD_UPLOAD_SYNC_TYPE_SWITCH_KEY + "-" + accountSignature, syncState).commit();
+    }
+
+    public void saveCloudUploadSyncAllowed(String accountSignature, int syncType, boolean isAllowed) {
+        int syncState = getCloudUploadSyncState(accountSignature);
+        if(isAllowed){
+            syncState |= syncType;
+        }else{
+            syncState &= (~syncType);
+        }
+        saveCloudUploadSyncState(accountSignature, syncState);
+    }
+
+    public void saveAlbumVideosUploadAllowed(String accountSignature, boolean isVideosUploadAllowed) {
+        settingsSharedPref.edit().putBoolean(ALBUM_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY + "-" + accountSignature, isVideosUploadAllowed).commit();
+    }
+
+    public void setAlbumUploadBucketList(String accountSignature, List<String> list) {
+        String s = TextUtils.join(",", list);
+        sharedPref.edit().putString(SHARED_PREF_ALBUM_UPLOAD_BUCKETS + "-" + accountSignature, s).commit();
+    }
+
+    public List<String> getAlbumUploadBucketList(String accountSignature) {
+        String s = sharedPref.getString(SHARED_PREF_ALBUM_UPLOAD_BUCKETS + "-" + accountSignature, "");
+        return Arrays.asList(TextUtils.split(s, ","));
     }
 
     public void saveSortFilesPref(int type, int order) {
@@ -284,18 +354,6 @@ public final class SettingsManager {
         editor.putInt(SORT_FILES_ORDER, order).commit();
     }
 
-    public void setCameraUploadBucketList(List<String> list) {
-        String s = TextUtils.join(",", list);
-        sharedPref.edit().putString(SHARED_PREF_CAMERA_UPLOAD_BUCKETS, s).commit();
-    }
-
-    /**
-     * @return list of bucket IDs that have been selected for upload. Empty list means "all buckets"
-     */
-    public List<String> getCameraUploadBucketList() {
-        String s = sharedPref.getString(SHARED_PREF_CAMERA_UPLOAD_BUCKETS, "");
-        return Arrays.asList(TextUtils.split(s, ","));
-    }
 
     public int getSortFilesTypePref() {
         return sharedPref.getInt(SORT_FILES_TYPE, 0);
@@ -303,14 +361,6 @@ public final class SettingsManager {
 
     public int getSortFilesOrderPref() {
         return sharedPref.getInt(SORT_FILES_ORDER, 0);
-    }
-
-    public String getCameraUploadRepoId() {
-        return sharedPref.getString(SettingsManager.SHARED_PREF_CAMERA_UPLOAD_REPO_ID, null);
-    }
-
-    public String getContactsUploadRepoId() {
-        return sharedPref.getString(SettingsManager.SHARED_PREF_CONTACTS_UPLOAD_REPO_ID, null);
     }
 
     public int getStorageDir() {

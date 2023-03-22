@@ -13,42 +13,27 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.ImageDecoder;
 import android.graphics.Matrix;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Bundle;
-import android.os.Debug;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.SystemClock;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
-import android.telephony.mbms.FileInfo;
 import android.util.Log;
-import android.view.SurfaceControl;
-import android.widget.ImageView;
 import android.widget.RemoteViews;
 
 import com.google.common.collect.Lists;
 import com.seafile.seadroid2.R;
-import com.seafile.seadroid2.SeafException;
-import com.seafile.seadroid2.account.Account;
-import com.seafile.seadroid2.cameraupload.CameraSyncAdapter;
+import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.data.DataManager;
-import com.seafile.seadroid2.data.DatabaseHelper;
 import com.seafile.seadroid2.data.DirentCache;
-import com.seafile.seadroid2.data.SeafCachedFile;
 import com.seafile.seadroid2.data.SeafDirent;
-import com.seafile.seadroid2.gallery.Image;
-import com.seafile.seadroid2.transfer.DownloadTask;
 import com.seafile.seadroid2.transfer.DownloadTaskInfo;
-import com.seafile.seadroid2.transfer.DownloadTaskManager;
 import com.seafile.seadroid2.transfer.TaskState;
 import com.seafile.seadroid2.transfer.TransferService;
-import com.seafile.seadroid2.transfer.UploadTaskInfo;
 import com.seafile.seadroid2.util.ConcurrentAsyncTask;
 import com.seafile.seadroid2.util.Utils;
 
@@ -56,18 +41,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 
 public class LoopImagesWidgetService extends Service {
@@ -583,7 +561,7 @@ public class LoopImagesWidgetService extends Service {
                     for(DirInfo dirInfo: dirInfos){
                         dirInfoStrs.add(dirInfo.toString());
                     }
-                    LoopImagesWidgetConfigureActivity.getSettingsManager().setLoopImagesWidgetDirInfo(appWidgetId, dirInfoStrs);
+                    SettingsManager.instance().setLoopImagesWidgetDirInfo(appWidgetId, dirInfoStrs);
                 }
             }
             if(updateWidgetSignal == UPDATE_ALL_WIDGETS) {

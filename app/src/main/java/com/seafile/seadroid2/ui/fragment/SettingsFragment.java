@@ -29,11 +29,11 @@ import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountInfo;
 import com.seafile.seadroid2.account.AccountManager;
-import com.seafile.seadroid2.cameraupload.CameraSyncService;
-import com.seafile.seadroid2.cameraupload.CameraUploadConfigActivity;
-import com.seafile.seadroid2.cameraupload.CameraUploadManager;
-import com.seafile.seadroid2.cameraupload.GalleryBucketUtils;
-import com.seafile.seadroid2.data.CameraSyncEvent;
+import com.seafile.seadroid2.upload.UploadConfigActivity;
+import com.seafile.seadroid2.upload.UploadManager;
+import com.seafile.seadroid2.upload.album.AlbumUploadConfigActivity;
+import com.seafile.seadroid2.upload.album.GalleryBucketUtils;
+import com.seafile.seadroid2.data.SyncEvent;
 import com.seafile.seadroid2.data.DataManager;
 import com.seafile.seadroid2.data.DatabaseHelper;
 import com.seafile.seadroid2.data.ServerInfo;
@@ -42,7 +42,6 @@ import com.seafile.seadroid2.gesturelock.LockPatternUtils;
 import com.seafile.seadroid2.ui.activity.BrowserActivity;
 import com.seafile.seadroid2.ui.activity.CreateGesturePasswordActivity;
 import com.seafile.seadroid2.ui.activity.PrivacyPolicyActivity;
-import com.seafile.seadroid2.ui.activity.SeafilePathChooserActivity;
 import com.seafile.seadroid2.ui.activity.SettingsActivity;
 import com.seafile.seadroid2.ui.dialog.ClearCacheTaskDialog;
 import com.seafile.seadroid2.ui.dialog.ClearPasswordTaskDialog;
@@ -65,30 +64,43 @@ import java.util.Map;
 public class SettingsFragment extends CustomPreferenceFragment {
     private static final String DEBUG_TAG = "SettingsFragment";
 
-    public static final String CAMERA_UPLOAD_BOTH_PAGES = "com.seafile.seadroid2.camera.upload";
-    public static final String CAMERA_UPLOAD_REMOTE_LIBRARY = "com.seafile.seadroid2.camera.upload.library";
-    public static final String CAMERA_UPLOAD_LOCAL_DIRECTORIES = "com.seafile.seadroid2.camera.upload.directories";
-    public static final String CONTACTS_UPLOAD_REMOTE_LIBRARY = "com.seafile.seadroid2.contacts.upload.library";
-    public static final int CHOOSE_CAMERA_UPLOAD_REQUEST = 2;
-//    public static final int CHOOSE_CONTACTS_UPLOAD_REQUEST = 3;
+//    public static final String CAMERA_UPLOAD_BOTH_PAGES = "com.seafile.seadroid2.camera.upload";
+//    public static final String CAMERA_UPLOAD_REMOTE_LIBRARY = "com.seafile.seadroid2.camera.upload.library";
+//    public static final String CAMERA_UPLOAD_LOCAL_DIRECTORIES = "com.seafile.seadroid2.camera.upload.directories";
+//    public static final String CONTACTS_UPLOAD_REMOTE_LIBRARY = "com.seafile.seadroid2.contacts.upload.library";
+    public static final int CHOOSE_CLOUD_UPLOAD_REQUEST = 2;
+    public static final int CHOOSE_ALBUM_UPLOAD_REQUEST = 3;
+
+    public static final String CLOUD_UPLOAD_BOTH_PAGES = "com.seafile.seadroid2.upload";
+    public static final String CLOUD_UPLOAD_REMOTE_LIBRARY = "com.seafile.seadroid2.upload.remote_library";
+    public static final String ALBUM_UPLOAD_BOTH_PAGES = "com.seafile.seadroid2.upload.album";
+    public static final String ALBUM_UPLOAD_LOCAL_DIRECTORIES = "com.seafile.seadroid2.upload.album.directories";
+
+    //    public static final int CHOOSE_CONTACTS_UPLOAD_REQUEST = 3;
     // Account Info
     private static Map<String, AccountInfo> accountInfoMap = Maps.newHashMap();
 
-    // Camera upload
+    // Cloud upload
+    private CheckBoxPreference cUploadSwitch;
     private PreferenceCategory cUploadCategory;
     private PreferenceScreen cUploadAdvancedScreen;
     private PreferenceCategory cUploadAdvancedCategory;
     private Preference cUploadRepoPref;
-    private CheckBoxPreference cCustomDirectoriesPref;
-    private Preference cLocalDirectoriesPref;
+    private CheckBoxPreference cbDataPlan;
+
+    // Album upload
+    private CheckBoxPreference aUploadSwitch;
+    private PreferenceCategory aUploadAdvancedCategory;
+    private CheckBoxPreference aCustomDirectoriesPref;
+    private Preference aLocalDirectoriesPref;
+    private CheckBoxPreference aVideoAllowed;
+
     // privacy
     private PreferenceCategory cPrivacyCategory;
     private Preference clientEncPref;
 
     private SettingsActivity mActivity;
     private String appVersion;
-    public SettingsManager settingsMgr;
-    private CameraUploadManager cameraManager;
 //    public ContactsUploadManager contactsManager;
     private AccountManager accountMgr;
     private DataManager dataMgr;
@@ -108,9 +120,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
 
         // global variables
         mActivity = (SettingsActivity) getActivity();
-        settingsMgr = SettingsManager.instance();
         accountMgr = new AccountManager(mActivity);
-        cameraManager = new CameraUploadManager(mActivity.getApplicationContext());
 //        contactsManager = new ContactsUploadManager(mActivity.getApplicationContext());
         Account act = accountMgr.getCurrentAccount();
         dataMgr = new DataManager(act);
@@ -120,7 +130,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
         Log.d(DEBUG_TAG, "onCreate");
         super.onCreate(savedInstanceState);
         EventBus.getDefault().register(this);
-        settingsMgr.registerSharedPreferencesListener(settingsListener);
+        SettingsManager.instance().registerSharedPreferencesListener(settingsListener);
         Account account = accountMgr.getCurrentAccount();
         if (!Utils.isNetworkOn()) {
             mActivity.showShortToast(mActivity, R.string.network_down);
@@ -136,7 +146,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
         Log.d(DEBUG_TAG, "onDestroy()");
-        settingsMgr.unregisterSharedPreferencesListener(settingsListener);
+        SettingsManager.instance().unregisterSharedPreferencesListener(settingsListener);
     }
 
     @Override
@@ -201,7 +211,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
                         accountMgr.signOutAccount(account);
 
                         // password auto clear
-                        if (settingsMgr.isPasswordAutoClearEnabled()) {
+                        if (SettingsManager.instance().isPasswordAutoClearEnabled()) {
                             clearPasswordSilently();
                         }
 
@@ -240,7 +250,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
                 if (newValue instanceof Boolean) {
                     boolean isChecked = (Boolean) newValue;
                     // inverse checked status
-                    settingsMgr.setupPasswordAutoClear(!isChecked);
+                    SettingsManager.instance().setupPasswordAutoClear(!isChecked);
                     return true;
                 }
 
@@ -259,7 +269,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
                     if (newValue instanceof Boolean) {
                         boolean isChecked = (Boolean) newValue;
                         // inverse checked status
-                        settingsMgr.setupEncrypt(!isChecked);
+                        SettingsManager.instance().setupEncrypt(!isChecked);
                         return true;
                     }
 
@@ -271,158 +281,9 @@ public class SettingsFragment extends CustomPreferenceFragment {
                 cPrivacyCategory.removePreference(clientEncPref);
             }
         }
-        // Camera Upload
-        cUploadCategory = (PreferenceCategory) findPreference(SettingsManager.CAMERA_UPLOAD_CATEGORY_KEY);
-        cUploadAdvancedScreen = (PreferenceScreen) findPreference(SettingsManager.CAMERA_UPLOAD_ADVANCED_SCREEN_KEY);
-        cUploadAdvancedCategory = (PreferenceCategory) findPreference(SettingsManager.CAMERA_UPLOAD_ADVANCED_CATEGORY_KEY);
 
-        findPreference(SettingsManager.CAMERA_UPLOAD_SWITCH_KEY).setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof Boolean) {
-                    boolean isChecked = (Boolean) newValue;
-                    if (!isChecked) {
-                        cUploadCategory.removePreference(cUploadRepoPref);
-                        cUploadCategory.removePreference(cUploadAdvancedScreen);
-                        cameraManager.disableCameraUpload();
-                    } else {
-                        Intent intent = new Intent(mActivity, CameraUploadConfigActivity.class);
-                        intent.putExtra(CAMERA_UPLOAD_BOTH_PAGES, true);
-                        startActivityForResult(intent, CHOOSE_CAMERA_UPLOAD_REQUEST);
-                    }
-                    return true;
-                }
+        initCloudUploadSettings();
 
-                return false;
-            }
-        });
-
-        // Change upload library
-        cUploadRepoPref = findPreference(SettingsManager.CAMERA_UPLOAD_REPO_KEY);
-        cUploadRepoPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-
-                // choose remote library
-                Intent intent = new Intent(mActivity, CameraUploadConfigActivity.class);
-                intent.putExtra(CAMERA_UPLOAD_REMOTE_LIBRARY, true);
-                startActivityForResult(intent, CHOOSE_CAMERA_UPLOAD_REQUEST);
-
-                return true;
-            }
-        });
-
-        cUploadRepoState = findPreference(SettingsManager.CAMERA_UPLOAD_STATE);
-        cUploadRepoState.setSummary(Utils.getUploadStateShow(getActivity()));
-        cUploadRepoState.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                CameraUploadManager cameraUploadManager = new CameraUploadManager(getContext());
-                Account account = cameraUploadManager.getCameraAccount();
-                if(account != null) {
-                    Bundle settingsBundle = new Bundle();
-                    settingsBundle.putBoolean(
-                            ContentResolver.SYNC_EXTRAS_MANUAL, true);
-                    settingsBundle.putBoolean(
-                            ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
-                    ContentResolver.requestSync(account.getAndroidAccount(), CameraUploadManager.AUTHORITY, settingsBundle);
-                }
-                return true;
-            }
-        });
-
-        // Contacts Upload
-//        cContactsCategory = (PreferenceCategory) findPreference(SettingsManager.CONTACTS_UPLOAD_CATEGORY_KEY);
-//        findPreference(SettingsManager.CONTACTS_UPLOAD_SWITCH_KEY).setOnPreferenceChangeListener(new Preference
-//                .OnPreferenceChangeListener() {
-//            @Override
-//            public boolean onPreferenceChange(Preference preference, Object newValue) {
-//                if (newValue instanceof Boolean) {
-//                    boolean isChecked = (Boolean) newValue;
-//                    if (isChecked) {
-//                        Intent intent = new Intent(mActivity, ContactsUploadConfigActivity.class);
-//                        intent.putExtra(CONTACTS_UPLOAD_REMOTE_LIBRARY, true);
-//                        startActivityForResult(intent, CHOOSE_CONTACTS_UPLOAD_REQUEST);
-//                    } else {
-//                        cContactsCategory.removePreference(cContactsRepoPref);
-//                        cContactsCategory.removePreference(cContactsRepoTime);
-//                        cContactsCategory.removePreference(cContactsRepoBackUp);
-//                        cContactsCategory.removePreference(cContactsRepoRecovery);
-//                        contactsManager.disableContactsUpload();
-//                    }
-//                    return true;
-//                }
-//
-//                return false;
-//            }
-//        });
-
-
-        // Change contacts upload library
-//        cContactsRepoPref = findPreference(SettingsManager.CONTACTS_UPLOAD_REPO_KEY);
-//        cContactsRepoPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-//            @Override
-//            public boolean onPreferenceClick(Preference preference) {
-//                Intent intent = new Intent(mActivity, ContactsUploadConfigActivity.class);
-//                intent.putExtra(CONTACTS_UPLOAD_REMOTE_LIBRARY, true);
-//                startActivityForResult(intent, CHOOSE_CONTACTS_UPLOAD_REQUEST);
-//                return true;
-//            }
-//        });
-//
-//        cContactsRepoTime = findPreference(SettingsManager.CONTACTS_UPLOAD_REPO_TIME_KEY);
-//
-//        cContactsRepoBackUp = findPreference(SettingsManager.CONTACTS_UPLOAD_REPO_BACKUP_KEY);
-//        cContactsRepoBackUp.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-//            @Override
-//            public boolean onPreferenceClick(Preference preference) {
-//                backupContacts();
-//                return true;
-//            }
-//        });
-//        cContactsRepoRecovery = findPreference(SettingsManager.CONTACTS_UPLOAD_REPO_RECOVERY_KEY);
-//        cContactsRepoRecovery.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-//            @Override
-//            public boolean onPreferenceClick(Preference preference) {
-//                recoveryContacts();
-//                return false;
-//            }
-//        });
-        // change local folder CheckBoxPreference
-        cCustomDirectoriesPref = (CheckBoxPreference) findPreference(SettingsManager.CAMERA_UPLOAD_CUSTOM_BUCKETS_KEY);
-        cCustomDirectoriesPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue instanceof Boolean) {
-                    boolean isCustom = (Boolean) newValue;
-                    if (!isCustom) {
-                        cUploadAdvancedCategory.removePreference(cLocalDirectoriesPref);
-                        scanCustomDirs(false);
-                    } else {
-                        cUploadAdvancedCategory.addPreference(cLocalDirectoriesPref);
-                        scanCustomDirs(true);
-                    }
-                    return true;
-                }
-
-                return false;
-            }
-        });
-
-        // change local folder Preference
-        cLocalDirectoriesPref = findPreference(SettingsManager.CAMERA_UPLOAD_BUCKETS_KEY);
-        cLocalDirectoriesPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-
-                // choose media buckets
-                scanCustomDirs(true);
-
-                return true;
-            }
-        });
-
-        refreshCameraUploadView();
 //        refreshContactsView();
 
         // App Version
@@ -554,15 +415,15 @@ public class SettingsFragment extends CustomPreferenceFragment {
 //            cContactsCategory.addPreference(cContactsRepoRecovery);
 //
 //            Account camAccount = contactsManager.getContactsAccount();
-//            if (camAccount != null && settingsMgr.getContactsUploadRepoName() != null) {
+//            if (camAccount != null && SettingsManager.instance().getContactsUploadRepoName() != null) {
 //                cContactsRepoPref.setSummary(camAccount.getSignature()
-//                        + "/" + settingsMgr.getContactsUploadRepoName()
+//                        + "/" + SettingsManager.instance().getContactsUploadRepoName()
 //                        + "/" + SettingsActivity.BASE_DIR);
 //            }
 //
 //            //show  backup  time
 //            DataManager dataManager = new DataManager(camAccount);
-//            String repoId = settingsMgr.getContactsUploadRepoId();
+//            String repoId = SettingsManager.instance().getContactsUploadRepoId();
 //            if (repoId != null) {
 //                List<SeafDirent> dirents = dataManager.getCachedDirents(repoId, "/");
 //                if (dirents != null) {
@@ -594,6 +455,160 @@ public class SettingsFragment extends CustomPreferenceFragment {
 //        }
 //    }
 
+
+    private void initCloudUploadSettings(){
+        // cloud Upload
+        cUploadCategory = (PreferenceCategory) findPreference(SettingsManager.CLOUD_UPLOAD_CATEGORY_KEY);
+        cUploadAdvancedScreen = (PreferenceScreen) findPreference(SettingsManager.CLOUD_UPLOAD_ADVANCED_SCREEN_KEY);
+        cUploadAdvancedCategory = (PreferenceCategory) findPreference(SettingsManager.CLOUD_UPLOAD_ADVANCED_CATEGORY_KEY);
+
+        cUploadSwitch = (CheckBoxPreference) findPreference(SettingsManager.CLOUD_UPLOAD_SWITCH_KEY);
+        cUploadSwitch.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isChecked = (Boolean) newValue;
+                    Account account = accountMgr.getCurrentAccount();
+                    if (!isChecked) {
+                        cUploadCategory.removePreference(cUploadRepoPref);
+                        cUploadCategory.removePreference(cUploadAdvancedScreen);
+                        UploadManager.disableAccountUpload(account);
+                    }
+                    else {
+                        Intent intent = new Intent(mActivity, UploadConfigActivity.class);
+                        startActivityForResult(intent, CHOOSE_CLOUD_UPLOAD_REQUEST);
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+        });
+
+        // Change upload library
+        cUploadRepoPref = findPreference(SettingsManager.CLOUD_UPLOAD_REPO_KEY);
+        cUploadRepoPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+
+                // choose remote library
+                Intent intent = new Intent(mActivity, UploadConfigActivity.class);
+                intent.putExtra(CLOUD_UPLOAD_REMOTE_LIBRARY, true);
+                startActivityForResult(intent, CHOOSE_CLOUD_UPLOAD_REQUEST);
+
+                return true;
+            }
+        });
+
+        cUploadRepoState = findPreference(SettingsManager.CLOUD_UPLOAD_STATE);
+        cUploadRepoState.setSummary(Utils.getUploadStateShow(getActivity()));
+        cUploadRepoState.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                Account account = accountMgr.getCurrentAccount();
+                if(account != null && UploadManager.isSyncable(account)) {
+                    Bundle settingsBundle = new Bundle();
+                    settingsBundle.putBoolean(
+                            ContentResolver.SYNC_EXTRAS_MANUAL, true);
+                    settingsBundle.putBoolean(
+                            ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+                    ContentResolver.requestSync(account.getAndroidAccount(), UploadManager.AUTHORITY, settingsBundle);
+                }
+                return true;
+            }
+        });
+
+        cbDataPlan = ((CheckBoxPreference) findPreference(SettingsManager.CLOUD_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY));
+        cbDataPlan.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isChecked = (Boolean) newValue;
+                    SettingsManager.instance().saveCloudUploadDataPlanAllowed(accountMgr.getCurrentAccount().getSignature(), isChecked);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        initAlbumUploadSettings();
+
+        refreshCloudUploadView();
+    }
+
+    private void initAlbumUploadSettings(){
+        // change local folder CheckBoxPreference
+        aUploadAdvancedCategory = (PreferenceCategory) findPreference(SettingsManager.ALBUM_UPLOAD_ADVANCED_CATEGORY_KEY);
+        aVideoAllowed = ((CheckBoxPreference)findPreference(SettingsManager.ALBUM_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY));
+        aVideoAllowed.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isCustom = (Boolean) newValue;
+                    SettingsManager.instance().saveAlbumVideosUploadAllowed(accountMgr.getCurrentAccount().getSignature(), isCustom);
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        aCustomDirectoriesPref = (CheckBoxPreference) findPreference(SettingsManager.ALBUM_UPLOAD_CUSTOM_BUCKETS_KEY);
+        aCustomDirectoriesPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isCustom = (Boolean) newValue;
+                    if (!isCustom) {
+                        aUploadAdvancedCategory.removePreference(aLocalDirectoriesPref);
+                        scanAlbumCustomDirs(accountMgr.getCurrentAccount(), false);
+                    } else {
+                        aUploadAdvancedCategory.addPreference(aLocalDirectoriesPref);
+                        scanAlbumCustomDirs(accountMgr.getCurrentAccount(), true);
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+        });
+
+        // change local folder Preference
+        aLocalDirectoriesPref = findPreference(SettingsManager.ALBUM_UPLOAD_BUCKETS_KEY);
+        aLocalDirectoriesPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+
+                // choose media buckets
+                scanAlbumCustomDirs(accountMgr.getCurrentAccount(), true);
+
+                return true;
+            }
+        });
+
+        aUploadSwitch = (CheckBoxPreference) findPreference(SettingsManager.ALBUM_UPLOAD_SWITCH_KEY);
+        aUploadSwitch.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isChecked = (Boolean) newValue;
+                    if (!isChecked) {
+                        aUploadAdvancedCategory.removePreference(aCustomDirectoriesPref);
+                        aCustomDirectoriesPref.setChecked(false);
+                        aUploadAdvancedCategory.removePreference(aLocalDirectoriesPref);
+                        aUploadAdvancedCategory.removePreference(aVideoAllowed);
+                        UploadManager.disableAccountUploadSync(accountMgr.getCurrentAccount(), UploadManager.ALBUM_SYNC);
+                    }
+                    else {
+                        Intent intent = new Intent(mActivity, AlbumUploadConfigActivity.class);
+                        startActivityForResult(intent, CHOOSE_ALBUM_UPLOAD_REQUEST);
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+        });
+    }
 
     private void clearPasswordSilently() {
         ConcurrentAsyncTask.submit(new Runnable() {
@@ -629,35 +644,49 @@ public class SettingsFragment extends CustomPreferenceFragment {
         findPreference(SettingsManager.SETTINGS_CACHE_DIR_KEY).setSummary(summary);
     }
 
-    private void refreshCameraUploadView() {
-        Account camAccount = cameraManager.getCameraAccount();
-        if (camAccount != null && settingsMgr.getCameraUploadRepoName() != null) {
-            cUploadRepoPref.setSummary(camAccount.getSignature()
-                    + "/" + settingsMgr.getCameraUploadRepoName());
-        }
-
-        ((CheckBoxPreference) findPreference(SettingsManager.CAMERA_UPLOAD_SWITCH_KEY)).setChecked(cameraManager.isCameraUploadEnabled());
-
-        if (cameraManager.isCameraUploadEnabled()) {
-            cUploadCategory.addPreference(cUploadRepoPref);
-            cUploadCategory.addPreference(cUploadAdvancedScreen);
-        } else {
+    private void refreshCloudUploadView() {
+        Account camAccount = accountMgr.getCurrentAccount();
+        if(camAccount == null || !UploadManager.isEnableCloudUpload(camAccount)) {
             cUploadCategory.removePreference(cUploadRepoPref);
             cUploadCategory.removePreference(cUploadAdvancedScreen);
+            cUploadSwitch.setChecked(false);
+            return;
         }
 
+        String accountSignature = camAccount.getSignature();
+
+        cUploadRepoPref.setSummary(accountSignature
+                + "/" + SettingsManager.instance().getCloudUploadRepoName(accountSignature) + ":" + SettingsManager.instance().getCloudUploadDataPath(accountSignature));
+
+        ((CheckBoxPreference) findPreference(SettingsManager.CLOUD_UPLOAD_SWITCH_KEY)).setChecked(true);
+
+        cUploadCategory.addPreference(cUploadRepoPref);
+        cUploadCategory.addPreference(cUploadAdvancedScreen);
+
         // data plan:
-        CheckBoxPreference cbDataPlan = ((CheckBoxPreference) findPreference(SettingsManager.CAMERA_UPLOAD_ALLOW_DATA_PLAN_SWITCH_KEY));
-        if (cbDataPlan != null)
-            cbDataPlan.setChecked(settingsMgr.isDataPlanAllowed());
+        if (cbDataPlan != null) {
+            cbDataPlan.setChecked(SettingsManager.instance().isCloudUploadDataPlanAllowed(accountSignature));
+        }
 
-        // videos
-        CheckBoxPreference cbVideoAllowed = ((CheckBoxPreference)findPreference(SettingsManager.CAMERA_UPLOAD_ALLOW_VIDEOS_SWITCH_KEY));
-        if (cbVideoAllowed != null)
-            cbVideoAllowed.setChecked(settingsMgr.isVideosUploadAllowed());
+        refreshAlbumUploadView();
+    }
 
+    private void refreshAlbumUploadView(){
+        Account camAccount = accountMgr.getCurrentAccount();
+        if(camAccount == null || !UploadManager.isEnableCloudUploadSync(camAccount, UploadManager.ALBUM_SYNC)){
+            aUploadSwitch.setChecked(false);
+            aUploadAdvancedCategory.removePreference(aLocalDirectoriesPref);
+            aUploadAdvancedCategory.removePreference(aCustomDirectoriesPref);
+            aUploadAdvancedCategory.removePreference(aVideoAllowed);
+            return;
+        }
+        String accountSignature = camAccount.getSignature();
+
+        if (aVideoAllowed != null) {
+            aVideoAllowed.setChecked(SettingsManager.instance().isAlbumVideosUploadAllowed(accountSignature));
+        }
         List<String> bucketNames = new ArrayList<>();
-        List<String> bucketIds = settingsMgr.getCameraUploadBucketList();
+        List<String> bucketIds = SettingsManager.instance().getAlbumUploadBucketList(accountSignature);
         List<GalleryBucketUtils.Bucket> tempBuckets = GalleryBucketUtils.getMediaBuckets(getActivity().getApplicationContext());
         LinkedHashSet<GalleryBucketUtils.Bucket> bucketsSet = new LinkedHashSet<>(tempBuckets.size());
         bucketsSet.addAll(tempBuckets);
@@ -668,21 +697,22 @@ public class SettingsFragment extends CustomPreferenceFragment {
             allBuckets.add(bucket);
         }
 
-        for (GalleryBucketUtils.Bucket bucket: allBuckets) {
+        for (GalleryBucketUtils.Bucket bucket : allBuckets) {
             if (bucketIds.contains(bucket.id)) {
                 bucketNames.add(bucket.name);
             }
         }
 
+        aUploadAdvancedCategory.addPreference(aCustomDirectoriesPref);
+        aUploadAdvancedCategory.addPreference(aVideoAllowed);
         if (bucketNames.isEmpty()) {
-            cUploadAdvancedCategory.removePreference(cLocalDirectoriesPref);
-            cCustomDirectoriesPref.setChecked(false);
+            aUploadAdvancedCategory.removePreference(aLocalDirectoriesPref);
+            aCustomDirectoriesPref.setChecked(false);
         } else {
-            cCustomDirectoriesPref.setChecked(true);
-            cLocalDirectoriesPref.setSummary(TextUtils.join(", ", bucketNames));
-            cUploadAdvancedCategory.addPreference(cLocalDirectoriesPref);
+            aCustomDirectoriesPref.setChecked(true);
+            aLocalDirectoriesPref.setSummary(TextUtils.join(", ", bucketNames));
+            aUploadAdvancedCategory.addPreference(aLocalDirectoriesPref);
         }
-
     }
 
     private void clearCache() {
@@ -717,24 +747,11 @@ public class SettingsFragment extends CustomPreferenceFragment {
                 }
                 break;
 
-            case CHOOSE_CAMERA_UPLOAD_REQUEST:
-                if (resultCode == Activity.RESULT_OK) {
-                    if (data == null) {
-                        return;
-                    }
-                    final String repoName = data.getStringExtra(SeafilePathChooserActivity.DATA_REPO_NAME);
-                    final String repoId = data.getStringExtra(SeafilePathChooserActivity.DATA_REPO_ID);
-                    final Account account = data.getParcelableExtra(SeafilePathChooserActivity.DATA_ACCOUNT);
-                    if (repoName != null && repoId != null) {
-                        // Log.d(DEBUG_TAG, "Activating camera upload to " + account + "; " + repoName);
-                        cameraManager.setCameraAccount(account);
-                        settingsMgr.saveCameraUploadRepoInfo(repoId, repoName);
-                    }
-
-                } else if (resultCode == Activity.RESULT_CANCELED) {
-
-                }
-                refreshCameraUploadView();
+            case CHOOSE_CLOUD_UPLOAD_REQUEST:
+                refreshCloudUploadView();
+                break;
+            case CHOOSE_ALBUM_UPLOAD_REQUEST:
+                refreshAlbumUploadView();
                 break;
 //            case CHOOSE_CONTACTS_UPLOAD_REQUEST:
 //                if (resultCode == Activity.RESULT_OK) {
@@ -747,7 +764,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
 //                    if (repoName != null && repoId != null) {
 //                        //                        Log.d(DEBUG_TAG, "Activating contacts upload to " + account + "; " + repoName);
 //                        contactsManager.setContactsAccount(account);
-//                        settingsMgr.saveContactsUploadRepoInfo(repoId, repoName);
+//                        SettingsManager.instance().saveContactsUploadRepoInfo(repoId, repoName);
 //                    }
 //                } else if (resultCode == Activity.RESULT_CANCELED) {
 //                }
@@ -761,15 +778,14 @@ public class SettingsFragment extends CustomPreferenceFragment {
     }
 
 
-    private void scanCustomDirs(boolean isCustomScanOn) {
+    private void scanAlbumCustomDirs(Account account, boolean isCustomScanOn) {
         if (isCustomScanOn) {
-            Intent intent = new Intent(mActivity, CameraUploadConfigActivity.class);
-            intent.putExtra(CAMERA_UPLOAD_LOCAL_DIRECTORIES, true);
-            startActivityForResult(intent, CHOOSE_CAMERA_UPLOAD_REQUEST);
+            Intent intent = new Intent(mActivity, AlbumUploadConfigActivity.class);
+            startActivityForResult(intent, CHOOSE_ALBUM_UPLOAD_REQUEST);
         } else {
             List<String> selectedBuckets = new ArrayList<>();
-            settingsMgr.setCameraUploadBucketList(selectedBuckets);
-            refreshCameraUploadView();
+            SettingsManager.instance().setAlbumUploadBucketList(account.getSignature(), selectedBuckets);
+            refreshAlbumUploadView();
         }
     }
 
@@ -884,7 +900,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
 
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onEvent(CameraSyncEvent result) {
+    public void onEvent(SyncEvent result) {
 
         cUploadRepoState.setSummary(Utils.getUploadStateShow(getActivity()));
 

@@ -5,8 +5,8 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.common.collect.Lists;
-import com.seafile.seadroid2.cameraupload.CameraUploadManager;
 import com.seafile.seadroid2.data.ServerInfo;
+import com.seafile.seadroid2.upload.UploadManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -131,15 +131,9 @@ public class AccountManager {
             return;
         }
 
-        CameraUploadManager cameraManager = new CameraUploadManager(ctx);
-
         accountManager.invalidateAuthToken(Account.ACCOUNT_TYPE, account.getToken());
 
-        // disable camera upload if on this account
-        Account camAccount = cameraManager.getCameraAccount();
-        if (camAccount != null && camAccount.equals(account)) {
-            cameraManager.disableCameraUpload();
-        }
+        UploadManager.disableAccountUpload(account);
     }
 
     /**

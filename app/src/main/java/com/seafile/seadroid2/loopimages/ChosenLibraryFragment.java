@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.ListView;
 
 import com.seafile.seadroid2.R;
+import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.ui.activity.SeafilePathChooserActivity;
 
@@ -38,7 +39,7 @@ public class ChosenLibraryFragment extends Fragment {
         for(int i=0;i<chosenlibraryListAdapter.getCount();++i){
             dirInfoStrs.add(chosenlibraryListAdapter.getItem(i).toString());
         }
-        mActivity.getSettingsManager().setLoopImagesWidgetDirInfo(mActivity.getAppWidgetId(), dirInfoStrs);
+        SettingsManager.instance().setLoopImagesWidgetDirInfo(mActivity.getAppWidgetId(), dirInfoStrs);
     }
 
 //    @Override

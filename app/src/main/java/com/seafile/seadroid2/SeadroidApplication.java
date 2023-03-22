@@ -27,6 +27,7 @@ public class SeadroidApplication extends Application {
     private int waitingNumber;
     private int totalNumber;
     private int scanUploadStatus;
+    private int syncType;
     private static SeadroidApplication instance;
 
     public void onCreate() {
@@ -104,7 +105,7 @@ public class SeadroidApplication extends Application {
         notificationManager.createNotificationChannel(channel);
     }
 
-    public void setCameraUploadNumber(int waitingNumber, int totalNumber) {
+    public void setCloudUploadNumber(int waitingNumber, int totalNumber) {
         this.waitingNumber = waitingNumber;
         this.totalNumber = totalNumber;
     }
@@ -125,4 +126,11 @@ public class SeadroidApplication extends Application {
         return scanUploadStatus;
     }
 
+    public void setSyncType(int syncType){
+        this.syncType = syncType;
+    }
+
+    public int getSyncType(){
+        return syncType;
+    }
 }

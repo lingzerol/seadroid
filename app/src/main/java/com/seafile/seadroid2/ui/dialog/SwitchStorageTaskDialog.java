@@ -13,12 +13,14 @@ import android.view.View;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
+import com.google.common.collect.Lists;
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SeadroidApplication;
 import com.seafile.seadroid2.account.Account;
-import com.seafile.seadroid2.cameraupload.CameraUploadManager;
+import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.data.StorageManager;
 import com.seafile.seadroid2.transfer.TransferService;
+import com.seafile.seadroid2.upload.UploadManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,19 +69,23 @@ class SwitchStorageTask extends TaskDialog.Task {
 
         Context context = SeadroidApplication.getAppContext();
 
-        CameraUploadManager camera = new CameraUploadManager(context);
-        Account camAccount = camera.getCameraAccount();
-        if (camera.isCameraUploadEnabled()) {
-            Log.d(DEBUG_TAG, "Temporarily disable camera upload");
-            camera.disableCameraUpload();
+        AccountManager accountManager = new AccountManager(context);
+        Account camAccount = accountManager.getCurrentAccount();
+        List<Account> uploadAccounts = Lists.newArrayList();
+        Log.d(DEBUG_TAG, "Temporarily disable camera upload");
+        for(Account account: accountManager.getSignedInAccountList()){
+            if(UploadManager.isSyncable(account)){
+                uploadAccounts.add(account);
+                UploadManager.disableAccountUpload(account);
+            }
         }
 
         Log.i(DEBUG_TAG, "Switching storage to " + location.description);
         StorageManager.getInstance().setStorageDir(location.id);
 
-        if (camAccount != null) {
-            Log.d(DEBUG_TAG, "Reenable camera upload");
-            camera.setCameraAccount(camAccount);
+        Log.d(DEBUG_TAG, "Reenable camera upload");
+        for(Account account: uploadAccounts){
+            UploadManager.enableAccountUpload(account);
         }
     }
 }

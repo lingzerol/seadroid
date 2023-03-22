@@ -180,10 +180,14 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.seafile.seadroid2.cameraupload.CameraUploadConfigActivity"
-            android:label="@string/app_name"></activity> <!-- <activity android:name="com.seafile.seadroid2.cameraupload.ContactsUploadConfigActivity" -->
+            android:name="com.seafile.seadroid2.upload.UploadConfigActivity"
+            android:label="@string/app_name"></activity>
+        <activity
+            android:name="com.seafile.seadroid2.upload.album.AlbumUploadConfigActivity"
+            android:label="@string/app_name"></activity> <!-- <activity android:name="cameractsUploadConfigActivity" -->
         <!-- android:label="@string/app_name"> -->
-        <!-- </activity> -->
+
+    <!-- </activity> -->
         <activity
             android:name=".ui.activity.GalleryActivity"
             android:label="@string/app_name"></activity>
@@ -213,14 +217,15 @@
 
         <service android:name="com.seafile.seadroid2.transfer.TransferService"></service>
         <service android:name="com.seafile.seadroid2.monitor.FileMonitorService"></service>
-        <service android:name=".cameraupload.MediaObserverService" />
+        <service android:name=".upload.MediaObserverService" />
 
         <provider
-            android:name=".cameraupload.StubContentProvider"
-            android:authorities="${applicationId}.cameraupload.provider"
+            android:name=".upload.StubContentProvider"
+            android:authorities="${applicationId}.upload.provider"
             android:exported="false"
-            android:label="@string/sync_provider_camera_upload"
+            android:label="@string/sync_provider_cloud_upload"
             android:syncable="true" />
+
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="${applicationId}"
@@ -241,7 +246,7 @@
                 android:resource="@xml/authenticator" />
         </service>
         <service
-            android:name=".cameraupload.CameraSyncService"
+            android:name=".upload.UploadSyncService"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />
@@ -249,10 +254,10 @@
 
             <meta-data
                 android:name="android.content.SyncAdapter"
-                android:resource="@xml/cameraadapter" />
+                android:resource="@xml/upload_adapter" />
         </service>
         <service
-            android:name=".cameraupload.MediaSchedulerService"
+            android:name=".upload.MediaSchedulerService"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver android:name="com.seafile.seadroid2.BootAutostart">

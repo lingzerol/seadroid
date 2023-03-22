@@ -136,19 +136,19 @@
   <!--Optional button to Skip a PreferenceActivity [CHAR LIMIT=20]-->
   <!--contacts  upload-->
   <!--Camera Upload Preference-->
-  <string name="settings_camera_upload_info_title">Μεταφόρτωση φωτογραφιών</string>
-  <string name="settings_camera_upload_service_started">Η υπηρεσία μεταφόρτωσης ξεκίνησε</string>
-  <string name="settings_camera_upload_service_stopped">Η διαδικασία μεταφόρτωσης σταμάτησε</string>
-  <string name="settings_camera_upload_default_photos">Μεταφόρτωση φωτογραφιών μόνο από προεπιλογή</string>
-  <string name="settings_camera_upload_change_repo_title">Αλλαγή βιβλιοθήκης μεταφόρτωσης</string>
-  <string name="settings_camera_upload_repo_hint">Παρακαλώ επιλέξτε πρώτα μια βιβλιοθήκη</string>
-  <string name="settings_camera_upload_turn_on">Ενεργοποίηση μεταφόρτωσης φωτ. μηχανής</string>
+  <string name="settings_upload_info_title">Μεταφόρτωση φωτογραφιών</string>
+  <string name="settings_upload_service_started">Η υπηρεσία μεταφόρτωσης ξεκίνησε</string>
+  <string name="settings_upload_service_stopped">Η διαδικασία μεταφόρτωσης σταμάτησε</string>
+  <string name="settings_album_upload_default_photos">Μεταφόρτωση φωτογραφιών μόνο από προεπιλογή</string>
+  <string name="settings_upload_change_repo_title">Αλλαγή βιβλιοθήκης μεταφόρτωσης</string>
+  <string name="settings_upload_repo_hint">Παρακαλώ επιλέξτε πρώτα μια βιβλιοθήκη</string>
+  <string name="settings_upload_turn_on">Ενεργοποίηση μεταφόρτωσης φωτ. μηχανής</string>
   <string name="settings_camera_upload_lib_not_found">Η επιλεγμένη βιβλιοθήκη δεν υπάρχει</string>
-  <string name="settings_camera_upload_advanced_feature_subtitle">Μη τυπικές ρυθμίσεις μεταφόρτωσης</string>
+  <string name="settings_album_upload_advanced_feature_subtitle">Μη τυπικές ρυθμίσεις μεταφόρτωσης</string>
   <!--Camera Upload Configuration View-->
-  <string name="settings_cuc_network_title">Πώς να μεταφορτώσετε</string>
-  <string name="settings_cuc_type_title">Τί να μεταφορτώσετε</string>
-  <string name="settings_cuc_remote_lib_title">Επιλέξτε απομακρυσμένη βιβλιοθήκη</string>
+  <string name="settings_upload_network_title">Πώς να μεταφορτώσετε</string>
+  <string name="settings_upload_type_title">Τί να μεταφορτώσετε</string>
+  <string name="settings_upload_remote_lib_title">Επιλέξτε απομακρυσμένη βιβλιοθήκη</string>
   <!--Camera Sync-->
   <!--pull to refresh-->
   <!--storage access framework-->

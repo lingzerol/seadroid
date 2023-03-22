@@ -226,11 +226,11 @@
   <string name="skip_button_label">Přeskočit</string>
   <!--contacts  upload-->
   <!--Camera Upload Preference-->
-  <string name="settings_camera_upload_info_title">Nahrání fotky z fotoaparátu</string>
+  <string name="settings_upload_info_title">Nahrání fotky z fotoaparátu</string>
   <string name="settings_camera_upload_data_plan_allowed">Mobilní data povolena</string>
   <!--Camera Upload Configuration View-->
-  <string name="settings_cuc_network_wifi">Pouze WIFI</string>
-  <string name="settings_cuc_network_data_plan">WIFI a mobilní data</string>
+  <string name="settings_upload_network_wifi">Pouze WIFI</string>
+  <string name="settings_upload_network_data_plan">WIFI a mobilní data</string>
   <string name="settings_cuc_loading">načítání...</string>
   <!--Camera Sync-->
   <string name="settings_about_title">O PROGRAMU</string>

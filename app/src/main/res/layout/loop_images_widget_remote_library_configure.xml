@@ -10,7 +10,7 @@
         android:layout_alignParentTop="true"
         android:layout_marginLeft="@dimen/tv_title_margin_left"
         android:layout_marginTop="@dimen/tv_title_margin_top"
-        android:text="@string/settings_cuc_remote_lib_title"
+        android:text="@string/settings_upload_remote_lib_title"
         android:textColor="@color/fancy_orange"
         android:textSize="@dimen/tv_title_txt_size"/>
 
@@ -46,7 +46,7 @@
                 android:id="@+id/loopimages_selection_up_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/settings_cuc_upload_to_parent_folder"
+                android:text="@string/settings_upload_upload_to_parent_folder"
                 android:textSize="@dimen/tv_subtitle_txt_size"
                 android:textColor="@color/fancy_gray"
                 android:layout_centerVertical="true"

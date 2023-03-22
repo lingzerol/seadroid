@@ -33,7 +33,6 @@ public class UnlockGesturePasswordActivity extends BaseActivity implements Toolb
 
     private Toast mToast;
 
-    SettingsManager settingsMgr;
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -53,7 +52,6 @@ public class UnlockGesturePasswordActivity extends BaseActivity implements Toolb
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.gesture_lock);
-        settingsMgr = SettingsManager.instance();
     }
 
     @Override
@@ -97,7 +95,7 @@ public class UnlockGesturePasswordActivity extends BaseActivity implements Toolb
             if (mLockPatternUtils.checkPattern(pattern)) {
                 mLockPatternView
                         .setDisplayMode(LockPatternView.DisplayMode.Correct);
-                settingsMgr.setupGestureLock();
+                SettingsManager.instance().setupGestureLock();
                 finish();
             } else {
                 mLockPatternView

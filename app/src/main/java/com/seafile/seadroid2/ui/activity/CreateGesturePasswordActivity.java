@@ -157,7 +157,6 @@ public class CreateGesturePasswordActivity extends BaseActivity implements
         final int footerMessage;
         final boolean patternEnabled;
     }
-    SettingsManager settingsMgr = SettingsManager.instance();
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -424,7 +423,7 @@ public class CreateGesturePasswordActivity extends BaseActivity implements
     private void saveChosenPatternAndFinish() {
         LockPatternUtils mLockPatternUtils = new LockPatternUtils(this);
         mLockPatternUtils.saveLockPattern(mChosenPattern);
-        settingsMgr.setupGestureLock();
+        SettingsManager.instance().setupGestureLock();
         showShortToast(this, getResources().getString(R.string.lockpattern_pattern_toast_saved));
         setResult(RESULT_OK);
         finish();

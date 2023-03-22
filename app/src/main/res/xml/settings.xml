@@ -55,29 +55,28 @@
 
     </PreferenceCategory>
     <PreferenceCategory
-            android:layout="@layout/bg_settings_section_camera_upload"
-        android:key="category_camera_upload_key"
-            android:title="@string/settings_camera_upload_info_title" >
+            android:layout="@layout/bg_settings_section_upload"
+        android:key="category_cloud_upload_key"
+            android:title="@string/settings_upload_info_title" >
         <com.seafile.seadroid2.ui.SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="camera_upload_switch_key"
-            android:summaryOff="@string/settings_camera_upload_service_stopped"
-            android:summaryOn="@string/settings_camera_upload_service_started"
-            android:title="@string/settings_camera_upload_turn_on" >
+            android:key="cloud_upload_switch_key"
+            android:summaryOff="@string/settings_upload_service_stopped"
+            android:summaryOn="@string/settings_upload_service_started"
+            android:title="@string/settings_upload_turn_on" >
         </com.seafile.seadroid2.ui.SwitchPreferenceCompat>
 
         <Preference
-            android:key="camera_upload_repo_key"
-            android:summary="@string/settings_camera_upload_repo_hint"
-            android:title="@string/settings_camera_upload_change_repo_title" />
+            android:key="cloud_upload_repo_key"
+            android:summary="@string/settings_upload_repo_hint"
+            android:title="@string/settings_upload_change_repo_title" />
 
-        <PreferenceScreen android:key="screen_camera_upload_advanced_feature"
-                          android:title="@string/settings_camera_upload_advanced_feature_title"
-                          android:summary="@string/settings_camera_upload_advanced_feature_subtitle">
+        <PreferenceScreen android:key="screen_upload_advanced_feature"
+                          android:title="@string/settings_upload_advanced_feature_title"
+                          android:summary="@string/settings_upload_advanced_feature_subtitle">
 
-            <PreferenceCategory android:key="category_camera_upload_advanced_key"
+            <PreferenceCategory android:key="category_upload_advanced_key"
                 android:title="@string/settings_advance_feature_title">
-
                 <CheckBoxPreference
                     android:defaultValue="false"
                     android:key="allow_data_plan_switch_key"
@@ -86,32 +85,48 @@
                     android:title="@string/settings_camera_upload_allow_data_plan"
                     >
                 </CheckBoxPreference>
-                <CheckBoxPreference
-                    android:defaultValue="false"
-                    android:key="allow_videos_upload_switch_key"
-                    android:summaryOff="@string/settings_camera_upload_default_photos"
-                    android:summaryOn="@string/settings_camera_upload_videos_allowed"
-                    android:title="@string/settings_camera_upload_allow_videos">
-                </CheckBoxPreference>
-                <com.seafile.seadroid2.ui.SwitchPreferenceCompat
-                    android:defaultValue="false"
-                    android:key="camera_upload_buckets_switch_key"
-                    android:summaryOff="@string/settings_camera_upload_advanced_custom_directories_off"
-                    android:summaryOn="@string/settings_camera_upload_advanced_custom_directories_on"
-                    android:title="@string/settings_camera_upload_advanced_custom_directories"
-                    >
-                </com.seafile.seadroid2.ui.SwitchPreferenceCompat>
-                <Preference
-                    android:key="camera_upload_buckets_key"
-                    android:summary="@string/settings_camera_upload_dir_auto_scan"
-                        android:title="@string/settings_camera_upload_choose_dir" >
-                </Preference>
+
+                <PreferenceScreen android:key="album_upload_advanced_feature"
+                    android:title="@string/settings_album_upload_advanced_feature_title"
+                    android:summary="@string/settings_album_upload_advanced_feature_subtitle">
+                    <PreferenceCategory android:key="category_album_upload_advanced_key"
+                        android:title="@string/settings_album_advance_feature_title">
+                        <com.seafile.seadroid2.ui.SwitchPreferenceCompat
+                            android:defaultValue="false"
+                            android:key="album_upload_switch_key"
+                            android:summaryOff="@string/settings_album_upload_stopped"
+                            android:summaryOn="@string/settings_album_upload_started"
+                            android:title="@string/settings_album_upload_turn_on" >
+                        </com.seafile.seadroid2.ui.SwitchPreferenceCompat>
+                        <CheckBoxPreference
+                            android:defaultValue="false"
+                            android:key="allow_videos_upload_switch_key"
+                            android:summaryOff="@string/settings_album_upload_default_photos"
+                            android:summaryOn="@string/settings_album_upload_videos_allowed"
+                            android:title="@string/settings_album_upload_allow_videos">
+                        </CheckBoxPreference>
+                        <com.seafile.seadroid2.ui.SwitchPreferenceCompat
+                            android:defaultValue="false"
+                            android:key="album_upload_buckets_switch_key"
+                            android:summaryOff="@string/settings_album_upload_advanced_custom_directories_off"
+                            android:summaryOn="@string/settings_album_upload_advanced_custom_directories_on"
+                            android:title="@string/settings_album_upload_advanced_custom_directories"
+                            >
+                        </com.seafile.seadroid2.ui.SwitchPreferenceCompat>
+                        <Preference
+                            android:key="album_upload_buckets_key"
+                            android:summary="@string/settings_album_upload_dir_auto_scan"
+                                android:title="@string/settings_album_upload_choose_dir" >
+                        </Preference>
+                    </PreferenceCategory>
+                </PreferenceScreen>
+
             </PreferenceCategory>
         </PreferenceScreen>
         <Preference
-            android:key="camera_upload_state"
+            android:key="cloud_upload_state"
             android:summary="@string/waiting_state"
-            android:title="@string/camera_upload_state" />
+            android:title="@string/cloud_upload_state" />
     </PreferenceCategory>
     <!--<PreferenceCategory-->
         <!--android:key="category_contacts_upload_key"-->

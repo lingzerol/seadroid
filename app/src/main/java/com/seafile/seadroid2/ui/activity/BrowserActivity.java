@@ -1,8 +1,6 @@
 package com.seafile.seadroid2.ui.activity;
 
 import android.Manifest;
-import android.app.PendingIntent;
-import android.app.RecoverableSecurityException;
 import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -10,7 +8,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.IntentSender;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -42,7 +39,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.FrameLayout;
-import android.widget.RemoteViews;
 
 import com.google.common.collect.Lists;
 import com.seafile.seadroid2.R;
@@ -51,8 +47,8 @@ import com.seafile.seadroid2.SeafException;
 import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountManager;
-import com.seafile.seadroid2.cameraupload.CameraUploadManager;
-import com.seafile.seadroid2.cameraupload.MediaObserverService;
+import com.seafile.seadroid2.upload.UploadManager;
+import com.seafile.seadroid2.upload.MediaObserverService;
 import com.seafile.seadroid2.data.CheckUploadServiceEvent;
 import com.seafile.seadroid2.data.DataManager;
 import com.seafile.seadroid2.data.DatabaseHelper;
@@ -403,7 +399,7 @@ public class BrowserActivity extends BaseActivity
 
         requestReadExternalStoragePermission();
         Utils.startCameraSyncJob(this);
-        syncCamera();
+        syncCloud();
         startLoopImagesWidget();
     }
 
@@ -2440,11 +2436,12 @@ public class BrowserActivity extends BaseActivity
         getReposFragment().showDirBottomSheet(title, dirent);
     }
 
-    private void syncCamera() {
-        SettingsManager settingsManager = SettingsManager.instance();
-        CameraUploadManager cameraManager = new CameraUploadManager(getApplicationContext());
-        if (cameraManager.isCameraUploadEnabled() && settingsManager.isVideosUploadAllowed()) {
-            cameraManager.performFullSync();
+    private void syncCloud() {
+        AccountManager accountManager = new AccountManager(this);
+        for(Account account: accountManager.getSignedInAccountList()) {
+            if (UploadManager.isSyncable(account)) {
+                UploadManager.performFullSync(account);
+            }
         }
     }
 
@@ -2466,10 +2463,10 @@ public class BrowserActivity extends BaseActivity
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(CheckUploadServiceEvent result) {
-        if (!Utils.isServiceRunning(BrowserActivity.this, "com.seafile.seadroid2.cameraupload.MediaObserverService")) {
+        if (!Utils.isServiceRunning(BrowserActivity.this, "com.seafile.seadroid2.camera.MediaObserverService")) {
             mediaObserver = new Intent(this, MediaObserverService.class);
             startService(mediaObserver);
-            syncCamera();
+            syncCloud();
             Log.d(DEBUG_TAG, "onEvent============false ");
         } else {
             Log.d(DEBUG_TAG, "onEvent============true ");

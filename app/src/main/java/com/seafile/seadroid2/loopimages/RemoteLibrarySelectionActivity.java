@@ -2,7 +2,6 @@ package com.seafile.seadroid2.loopimages;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,14 +18,13 @@ import android.widget.TextView;
 import com.google.common.collect.Lists;
 import com.seafile.seadroid2.SeafConnection;
 import com.seafile.seadroid2.SeafException;
-import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.avatar.Avatar;
 import com.seafile.seadroid2.avatar.AvatarManager;
 import com.seafile.seadroid2.R;
-import com.seafile.seadroid2.cameraupload.CloudLibraryAccountAdapter;
-import com.seafile.seadroid2.cameraupload.CloudLibraryAdapter;
+import com.seafile.seadroid2.upload.CloudLibraryAccountAdapter;
+import com.seafile.seadroid2.upload.CloudLibraryAdapter;
 import com.seafile.seadroid2.data.DataManager;
 import com.seafile.seadroid2.data.SeafDirent;
 import com.seafile.seadroid2.data.SeafRepo;
@@ -37,7 +35,6 @@ import com.seafile.seadroid2.ui.adapter.DirentsAdapter;
 import com.seafile.seadroid2.ui.dialog.PasswordDialog;
 import com.seafile.seadroid2.ui.dialog.TaskDialog;
 import com.seafile.seadroid2.util.ConcurrentAsyncTask;
-import com.seafile.seadroid2.util.SystemSwitchUtils;
 import com.seafile.seadroid2.util.Utils;
 
 import java.net.HttpURLConnection;
@@ -255,7 +252,7 @@ public class RemoteLibrarySelectionActivity extends BaseActivity {
                     nav.setDir("/", repo.root);
                     chooseDir();
                 }
-                mCurrentDir = getString(R.string.settings_cuc_remote_lib_repo, repo.name);
+                mCurrentDir = getString(R.string.settings_upload_remote_lib_repo, repo.name);
                 setCurrentDirText(mCurrentDir);
                 SeafRepo seafRepo = getReposAdapter().getItem(position);
                 onRepoSelected(mAccount, seafRepo);
@@ -296,7 +293,7 @@ public class RemoteLibrarySelectionActivity extends BaseActivity {
                 break;
             case STEP_CHOOSE_REPO:
                 if (canChooseAccount) {
-                    mCurrentDir = getString(R.string.settings_cuc_remote_lib_account);
+                    mCurrentDir = getString(R.string.settings_upload_remote_lib_account);
                     setCurrentDirText(mCurrentDir);
                     chooseAccount(false);
                 } else if (cancelIfFirstStep) {
@@ -367,7 +364,7 @@ public class RemoteLibrarySelectionActivity extends BaseActivity {
         mStep = STEP_CHOOSE_ACCOUNT;
         mUpLayout.setVisibility(View.INVISIBLE);
         mEmptyText.setText(R.string.no_account);
-        mCurrentDir = getString(R.string.settings_cuc_remote_lib_account);
+        mCurrentDir = getString(R.string.settings_upload_remote_lib_account);
         setCurrentDirText(mCurrentDir);
 
         mLoadAccountsTask = new LoadAccountsTask(getAccountManager(), forwardIfOnlyOneAccount);

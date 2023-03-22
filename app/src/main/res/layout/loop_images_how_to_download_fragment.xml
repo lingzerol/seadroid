@@ -22,7 +22,7 @@
         android:layout_below="@+id/loopimages_wifi_title_tv"
         android:layout_marginRight="30dp"
         android:layout_marginTop="@dimen/section_margin_top"
-        android:text="@string/settings_cuc_option_hint"
+        android:text="@string/settings_upload_option_hint"
         android:textColor="@color/fancy_gray"
         android:textSize="@dimen/tv_subtitle_txt_size" />
 
@@ -33,7 +33,7 @@
             android:layout_alignLeft="@+id/loopimages_wifi_hint_tv"
             android:layout_below="@+id/loopimages_wifi_hint_tv"
             android:layout_marginTop="@dimen/tv_subtitle_margin_top"
-            android:text="@string/settings_cuc_swipe_left"
+            android:text="@string/settings_upload_swipe_left"
             android:textColor="@color/fancy_gray"
             android:textSize="@dimen/tv_subtitle_txt_size" />
 
@@ -50,7 +50,7 @@
             android:id="@+id/loopimages_wifi_only_rb"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/settings_cuc_network_wifi"
+            android:text="@string/settings_upload_network_wifi"
             android:textSize="@dimen/tv_subtitle_txt_size" />
 
         <RadioButton
@@ -58,7 +58,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/rb_margin_top"
-            android:text="@string/settings_cuc_network_data_plan"
+            android:text="@string/settings_upload_network_data_plan"
             android:textSize="@dimen/tv_subtitle_txt_size" />
         
     </RadioGroup>

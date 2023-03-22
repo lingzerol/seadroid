@@ -14,6 +14,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkInfo.DetailedState;
 import android.net.Uri;
@@ -37,9 +38,10 @@ import com.google.common.collect.Maps;
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SeadroidApplication;
 import com.seafile.seadroid2.SettingsManager;
-import com.seafile.seadroid2.cameraupload.MediaSchedulerService;
+import com.seafile.seadroid2.upload.MediaSchedulerService;
 import com.seafile.seadroid2.data.SeafRepo;
 import com.seafile.seadroid2.fileschooser.SelectableFile;
+import com.seafile.seadroid2.upload.UploadManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -349,17 +351,17 @@ public class Utils {
         ConnectivityManager connMgr = (ConnectivityManager)
                 SeadroidApplication.getAppContext().getSystemService(
                         Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        if (networkInfo == null) {
+        NetworkCapabilities networkCapabilities = connMgr.getNetworkCapabilities(connMgr.getActiveNetwork());
+        if (networkCapabilities == null || !networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
             return false;
         }
-        if (networkInfo.getType() == ConnectivityManager.TYPE_MOBILE) {
-            String extraInfo = networkInfo.getExtraInfo();
+        if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+            String extraInfo = connMgr.getActiveNetworkInfo().getExtraInfo();
             if (!TextUtils.isEmpty(extraInfo)) {
                 return true;
             }
         }
-        if (networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
+        if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
             return true;
         }
         return false;
@@ -370,14 +372,18 @@ public class Utils {
                 SeadroidApplication.getAppContext().getSystemService(
                         Context.CONNECTIVITY_SERVICE);
 
-        NetworkInfo wifi = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if(wifi != null && wifi.isAvailable()
-                && wifi.getDetailedState() == DetailedState.CONNECTED) {
+        NetworkCapabilities networkCapabilities = connMgr.getNetworkCapabilities(connMgr.getActiveNetwork());
+        if (networkCapabilities == null) {
+            return false;
+        }
+        if (networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) &&
+                        networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
             return true;
         }
-
         return false;
     }
+
     public static String pathJoin (String first, String... rest) {
         StringBuilder result = new StringBuilder(first);
         for (String b: rest) {
@@ -923,17 +929,18 @@ public class Utils {
         int scanUploadStatus = SeadroidApplication.getInstance().getScanUploadStatus();
         int waitingNumber = SeadroidApplication.getInstance().getWaitingNumber();
         int totalNumber = SeadroidApplication.getInstance().getTotalNumber();
+        int syncType = SeadroidApplication.getInstance().getSyncType();
         switch (scanUploadStatus) {
-            case CameraSyncStatus.SCANNING:
-                results = context.getString(R.string.is_scanning);
+            case SyncStatus.SCANNING:
+                results = UploadManager.getSyncName(syncType) + " " + context.getString(R.string.is_scanning);
                 break;
-            case CameraSyncStatus.NETWORK_UNAVAILABLE:
+            case SyncStatus.NETWORK_UNAVAILABLE:
                 results = context.getString(R.string.network_unavailable);
                 break;
-            case CameraSyncStatus.UPLOADING:
-                results = context.getString(R.string.is_uploading) + " " + (totalNumber - waitingNumber) + " / " + totalNumber;
+            case SyncStatus.UPLOADING:
+                results = UploadManager.getSyncName(syncType) + " " + context.getString(R.string.is_uploading) + " " + (totalNumber - waitingNumber) + " / " + totalNumber;
                 break;
-            case CameraSyncStatus.SCAN_END:
+            case SyncStatus.SCAN_END:
                 results = context.getString(R.string.Upload_completed) + " " + SettingsManager.instance().getUploadCompletedTime();
                 break;
             default:

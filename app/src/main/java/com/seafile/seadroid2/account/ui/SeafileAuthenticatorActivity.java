@@ -14,7 +14,6 @@ import android.widget.ListView;
 
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.account.Authenticator;
-import com.seafile.seadroid2.cameraupload.CameraUploadManager;
 import com.seafile.seadroid2.ui.BaseAuthenticatorActivity;
 
 /**
@@ -142,9 +141,6 @@ public class SeafileAuthenticatorActivity extends BaseAuthenticatorActivity {
         String sessionKey = intent.getStringExtra(ARG_AUTH_SESSION_KEY);
         boolean shib = intent.getBooleanExtra(ARG_SHIB, false);
 
-        int cameraIsSyncable = 0;
-        boolean cameraSyncAutomatically = true;
-
         if (intent.getBooleanExtra(ARG_IS_EDITING, false)) {
 
             String oldAccountName = intent.getStringExtra(ARG_EDIT_OLD_ACCOUNT_NAME);
@@ -168,9 +164,6 @@ public class SeafileAuthenticatorActivity extends BaseAuthenticatorActivity {
 
             Log.d(DEBUG_TAG, "removing old account " + oldAccountName);
 
-            cameraIsSyncable = ContentResolver.getIsSyncable(oldAccount, CameraUploadManager.AUTHORITY);
-            cameraSyncAutomatically = ContentResolver.getSyncAutomatically(oldAccount, CameraUploadManager.AUTHORITY);
-
             mAccountManager.removeAccount(oldAccount, null, null);
         }
 
@@ -187,9 +180,6 @@ public class SeafileAuthenticatorActivity extends BaseAuthenticatorActivity {
         }
 
         // set sync settings
-
-        ContentResolver.setIsSyncable(newAccount, CameraUploadManager.AUTHORITY, cameraIsSyncable);
-        ContentResolver.setSyncAutomatically(newAccount, CameraUploadManager.AUTHORITY, cameraSyncAutomatically);
 
         Bundle result = new Bundle();
         result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, true);

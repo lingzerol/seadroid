@@ -10,7 +10,7 @@ android {
         versionCode 123
         versionName "2.2.48"
         multiDexEnabled true
-        resValue "string", "authorities", applicationId + '.cameraupload.provider'
+        resValue "string", "authorities", applicationId + '.upload.provider'
         resValue "string", "account_type", "com.seafile.seadroid2.account.api2"
         buildConfigField "String", "ACCOUNT_TYPE", '"com.seafile.seadroid2.account.api2"'
         ndk {
@@ -53,7 +53,7 @@ android {
         debug {
             debuggable true
             applicationIdSuffix ".debug"
-            resValue "string", "authorities", defaultConfig.applicationId + '.debug.cameraupload.provider'
+            resValue "string", "authorities", defaultConfig.applicationId + '.debug.upload.provider'
             resValue "string", "account_type", "com.seafile.seadroid2.debug.account.api2"
             buildConfigField "String", "ACCOUNT_TYPE", '"com.seafile.seadroid2.debug.account.api2"'
             signingConfig signingConfigs.debug

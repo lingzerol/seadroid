@@ -332,55 +332,55 @@
     <string name="settings_contacts_upload_start_backup">Backup</string>
     <string name="settings_contacts_upload_start_backup_hint">Click to start contacts backup</string>
     <!--Camera Upload Preference-->
-    <string name="settings_camera_upload_info_title">Camera Photo Upload</string>
-    <string name="settings_camera_upload_service_started">Upload service started</string>
-    <string name="settings_camera_upload_service_stopped">Upload service stopped</string>
+    <string name="settings_upload_info_title">Cloud Upload</string>
+    <string name="settings_upload_service_started">Upload service started</string>
+    <string name="settings_upload_service_stopped">Upload service stopped</string>
     <string name="settings_camera_upload_allow_data_plan">Allow Data Plan</string>
-    <string name="settings_camera_upload_allow_videos">Allow Videos to Upload</string>
+    <string name="settings_album_upload_allow_videos">Allow Videos to Upload</string>
     <string name="settings_camera_upload_default_wifi">Use Wi-Fi only by default</string>
     <string name="settings_camera_upload_data_plan_allowed">Data plan allowed</string>
-    <string name="settings_camera_upload_default_photos">Upload photos only by default</string>
-    <string name="settings_camera_upload_videos_allowed">Videos included</string>
-    <string name="settings_camera_upload_change_repo_title">Change Upload Library</string>
-    <string name="settings_camera_upload_repo_hint">Please choose a library first</string>
-    <string name="settings_camera_upload_turn_on">Turn on Camera Upload</string>
-    <string name="settings_camera_upload_choose_dir">Change albums</string>
-    <string name="settings_camera_upload_dir_auto_scan">Auto scan photos by default</string>
+    <string name="settings_album_upload_default_photos">Upload photos only by default</string>
+    <string name="settings_album_upload_videos_allowed">Videos included</string>
+    <string name="settings_upload_change_repo_title">Change Upload Library</string>
+    <string name="settings_upload_repo_hint">Please choose a library first</string>
+    <string name="settings_upload_turn_on">Turn on Cloud Upload</string>
+    <string name="settings_album_upload_choose_dir">Change Albums</string>
+    <string name="settings_album_upload_dir_auto_scan">Auto scan photos by default</string>
     <string name="settings_camera_upload_lib_not_found">The selected library does not exist</string>
-    <string name="settings_camera_upload_advanced_feature_title">Advanced Options</string>
-    <string name="settings_camera_upload_advanced_feature_subtitle">Custom upload options</string>
-    <string name="settings_camera_upload_advanced_custom_directories">Custom Upload Albums</string>
-    <string name="settings_camera_upload_advanced_custom_directories_on">Pick photo albums</string>
-    <string name="settings_camera_upload_advanced_custom_directories_off">Auto scan device</string>
+    <string name="settings_album_upload_advanced_feature_title">Album Upload</string>
+    <string name="settings_album_upload_advanced_feature_subtitle">Custom upload options</string>
+    <string name="settings_album_upload_advanced_custom_directories">Custom Upload Albums</string>
+    <string name="settings_album_upload_advanced_custom_directories_on">Pick photo albums</string>
+    <string name="settings_album_upload_advanced_custom_directories_off">Auto scan device</string>
     <!--Camera Upload Configuration View-->
-    <string name="settings_cuc_title">Configuration Helper</string>
-    <string name="settings_cuc_welcome_text">Thanks for using the camera upload configuration helper. \nTo help you get started with the camera upload service, you\'ll be guided through a few initial steps.</string>
-    <string name="settings_cuc_network_title">How to upload</string>
-    <string name="settings_cuc_network_wifi">Wi-Fi only</string>
-    <string name="settings_cuc_network_data_plan">Wi-Fi or data plan</string>
-    <string name="settings_cuc_option_hint">Choose your preferred option. \nYou can change these options later in Settings.</string>
-    <string name="settings_cuc_type_title">What to upload</string>
-    <string name="settings_cuc_type_photo">Photos only</string>
-    <string name="settings_cuc_type_video">Photos and videos</string>
-    <string name="settings_cuc_local_dir_title">Select albums</string>
+    <string name="settings_upload_title">Configuration Helper</string>
+    <string name="settings_upload_welcome_text">Thanks for using the cloud upload configuration helper. \nTo help you get started with the camera upload service, you\'ll be guided through a few initial steps.</string>
+    <string name="settings_upload_network_title">How to upload</string>
+    <string name="settings_upload_network_wifi">Wi-Fi only</string>
+    <string name="settings_upload_network_data_plan">Wi-Fi or data plan</string>
+    <string name="settings_upload_option_hint">Choose your preferred option. \nYou can change these options later in Settings.</string>
+    <string name="settings_upload_type_title">What to upload</string>
+    <string name="settings_album_type_photo">Photos only</string>
+    <string name="settings_album_type_video">Photos and videos</string>
+    <string name="settings_album_local_dir_title">Select albums</string>
     <plurals name="settings_cuc_local_dir_items">
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>
-    <string name="settings_cuc_remote_lib_title">Select Remote Library</string>
-    <string name="settings_cuc_remote_lib_account">Choose an account</string>
-    <string name="settings_cuc_remote_lib_repo">%s was selected</string>
-    <string name="settings_cuc_upload_to_parent_folder">Up to Parent Folder</string>
+    <string name="settings_upload_remote_lib_title">Select Remote Library</string>
+    <string name="settings_upload_remote_lib_account">Choose an account</string>
+    <string name="settings_upload_remote_lib_repo">%s was selected</string>
+    <string name="settings_upload_upload_to_parent_folder">Up to Parent Folder</string>
     <string name="settings_cuc_auto_scan">Automatically guess camera albums</string>
     <string name="settings_cuc_pick_albums">Let me pick my photo albums</string>
     <string name="settings_cuc_remote_lib_hint">Choose your preferred account and library. \nYou can change these options later in the Settings.</string>
     <string name="settings_cuc_finish_title">Finish</string>
-    <string name="settings_cuc_ready">Seafile will begin uploading files from your selected folders after you confirm below.\nFeel free to close the app during this process.</string>
-    <string name="settings_cuc_swipe_left">Swipe left to continue.</string>
-    <string name="settings_cuc_click_btn">Click to close the configuration helper.</string>
+    <string name="settings_upload_ready">Seafile will begin uploading files from your selected folders after you confirm below.\nFeel free to close the app during this process.</string>
+    <string name="settings_upload_swipe_left">Swipe left to continue.</string>
+    <string name="settings_upload_click_btn">Click to close the configuration helper.</string>
     <string name="settings_cuc_loading">loading…</string>
     <!--Camera Sync-->
-    <string name="sync_provider_camera_upload">Camera photos and videos</string>
+    <string name="sync_provider_cloud_upload">Cloud Upload</string>
     <string name="camera_sync_notification_title_failed">Camera upload failed</string>
     <string name="camera_sync_notification_repo_missing_failed">Server repository is missing.</string>
     <string name="camera_sync_notification_auth_error_failed">Authentication error.</string>
@@ -559,7 +559,7 @@
     <string name="channel_name_download">File Downloading Info</string>
 
     <string name="above_quota">Above Quota</string>
-    <string name="camera_upload_state">Upload Info</string>
+    <string name="cloud_upload_state">Upload Info</string>
     <string name="waiting_state">Upload waiting</string>
     <string name="Upload_completed">Last sync finished at</string>
 
@@ -577,4 +577,10 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="settings_loopimages_network_title">How to download</string>
+    <string name="settings_upload_advanced_feature_title">Advanced Options</string>
+    <string name="settings_upload_advanced_feature_subtitle">Custom Upload Options</string>
+    <string name="settings_album_advance_feature_title">Album Upload</string>
+    <string name="settings_album_upload_started">Album upload started</string>
+    <string name="settings_album_upload_stopped">Album upload stopped</string>
+    <string name="settings_album_upload_turn_on">Turn On Album Upload</string>
 </resources>

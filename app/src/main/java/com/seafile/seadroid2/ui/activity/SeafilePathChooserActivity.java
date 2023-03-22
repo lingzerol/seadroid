@@ -88,6 +88,8 @@ public class SeafilePathChooserActivity extends BaseActivity implements Toolbar.
     public static final String DATA_DIR = "dir";
     public static final String DATA_ACCOUNT = "account";
 
+    public static final String ONLY_CHOOSE_REPO = "only_choose_repo";
+
     public static final String ONLY_SHOW_WRITABLE_REPOS = "onlyShowWritableRepos";
     public static final String SHOW_ENCRYPTED_REPOS = "showEncryptedRepos";
     public static final String ENCRYPTED_REPO_ID = "encryptedRepoId";
@@ -119,7 +121,7 @@ public class SeafilePathChooserActivity extends BaseActivity implements Toolbar.
         mListContainer = findViewById(R.id.listContainer);
         mProgressContainer = findViewById(R.id.progressContainer);
         mContentArea = findViewById(R.id.content);
-        isOnlyChooseRepo = intent.getBooleanExtra(SettingsFragment.CAMERA_UPLOAD_BOTH_PAGES, false);
+        isOnlyChooseRepo = intent.getBooleanExtra(ONLY_CHOOSE_REPO, false);
         if (isOnlyChooseRepo) {
             mOkButton.setVisibility(View.GONE);
             mNewFolder.setVisibility(View.GONE);

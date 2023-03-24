@@ -107,9 +107,9 @@ public class ShowImageFragment extends Fragment {
         mImageInfoTextView = (TextView) rootView.findViewById(R.id.loopimages_image_info);
 
         Intent intent = mActivity.getIntent();
-        dirInfo = LoopImagesWidgetConfigureActivity.getDirInfoFromString(context, intent.getStringExtra(LoopImagesWidget.DIR_INFO));
+        dirInfo = DirInfo.getDirInfoFromString(intent.getStringExtra(LoopImagesWidget.DIR_INFO));
         fileName = intent.getStringExtra(LoopImagesWidget.IMAGE_NAME);
-        mAccount = dirInfo.getAccount();
+        mAccount = LoopImagesWidgetConfigureActivity.getAccount(mActivity, dirInfo.getAccountSignature());
         dataMgr = new DataManager(mAccount);
 
         displayPhotos(dirInfo, fileName);

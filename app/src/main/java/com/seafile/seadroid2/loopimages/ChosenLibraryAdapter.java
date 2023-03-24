@@ -14,6 +14,7 @@ import com.mcxtzhang.swipemenulib.SwipeMenuLayout;
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SeadroidApplication;
 import com.seafile.seadroid2.account.Account;
+import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.data.DataManager;
 
 import java.util.Collections;
@@ -27,10 +28,11 @@ import java.util.Map;
 public class ChosenLibraryAdapter extends BaseAdapter {
 
     private List<DirInfo> dirInfos;
-
     private Map<String, DataManager> accountDataManager;
+    private ChosenLibraryFragment chosenLibraryFragment;
 
-    public ChosenLibraryAdapter() {
+    public ChosenLibraryAdapter(ChosenLibraryFragment chosenLibraryFragment) {
+        this.chosenLibraryFragment = chosenLibraryFragment;
         dirInfos = Lists.newLinkedList();
         accountDataManager = new HashMap<String, DataManager>();
     }
@@ -45,6 +47,9 @@ public class ChosenLibraryAdapter extends BaseAdapter {
     public static final int SORT_ORDER_DESCENDING = 12;
 
     private DataManager getDataManager(Account account){
+        if(account == null){
+            return null;
+        }
         if (!accountDataManager.containsKey(account.getSignature())) {
             accountDataManager.put(account.getSignature(), new DataManager(account));
         }
@@ -114,10 +119,10 @@ public class ChosenLibraryAdapter extends BaseAdapter {
             view.quickClose();
             viewHolder = (ChosenLibraryAdapter.Viewholder) convertView.getTag();
         }
-
-        viewHolder.icon.setImageResource(getDataManager(dir.getAccount()).getCachedRepoByID(dir.getRepoId()).getIcon());
+        Account account = LoopImagesWidgetConfigureActivity.getAccount(chosenLibraryFragment.getContext(), dir.getAccountSignature());
+        viewHolder.icon.setImageResource(getDataManager(account).getCachedRepoByID(dir.getRepoId()).getIcon());
         viewHolder.title.setText(dir.getRepoName() + ":" + dir.getDirPath());
-        viewHolder.subtitle.setText(dir.getAccount().getDisplayName());
+        viewHolder.subtitle.setText(account.getDisplayName());
         viewHolder.action.setTag(position);
         viewHolder.action.setOnClickListener(new DeleteItemOnClickListener());
 

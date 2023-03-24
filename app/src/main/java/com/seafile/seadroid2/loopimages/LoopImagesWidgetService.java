@@ -12,8 +12,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Handler;
@@ -28,6 +26,8 @@ import android.widget.RemoteViews;
 import com.google.common.collect.Lists;
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SettingsManager;
+import com.seafile.seadroid2.account.Account;
+import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.data.DataManager;
 import com.seafile.seadroid2.data.DirentCache;
 import com.seafile.seadroid2.data.SeafDirent;
@@ -39,7 +39,6 @@ import com.seafile.seadroid2.util.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -58,9 +57,8 @@ public class LoopImagesWidgetService extends Service {
     private static final int UPDATE_IMAGE_DELAY = 60 * 60 * 1000;
     private static final int ONCE_UPLOAD_IMAGE_NUM = 3;
     private static final int ONCE_REMOVE_IMAGE_NUM = 3*ONCE_UPLOAD_IMAGE_NUM;
-    private static final int LEFT_PREVIOUS_MAX_IMAGES_NUM = 100;
-    private static final int LEFT_FOLLOW_UP_MAX_IMAGES_NUM = 1000;
-    private static final int STOP_DOWNLOAD_TIMES = 3*LEFT_FOLLOW_UP_MAX_IMAGES_NUM;
+    private static final int MAX_ACCESS_TIME = 5;
+    private static final int MAX_DOWNLOAD_IMAGE_NUM = 500;
     public static final String UPDATE_WIDGETS_KEY = "update_widgets_key";
     public static final int UPDATE_ALL_WIDGETS = -1;
     public static final int UPDATE_NONE_WIDGETS = -2;
@@ -72,13 +70,14 @@ public class LoopImagesWidgetService extends Service {
     public static final String DELAY_UPDATE_ALL_SIGNAL = "delay_update_signal";
     private static final String DEBUG_TAG = "LoopImagesWidgetService";
 
+    private Object updateWidgetLock = new Object();
     private Object imageInfosLock = new Object();
-    private Map<Integer, List<ImageInfo>> imageInfos;
-    private Map<Integer, LazyQueue> queues;
     private LinkedList<TaskInfo> tasksInProgress = Lists.newLinkedList();
-    private Map<Integer, Integer> shouldDownloads;
-    private Map<String, AutoCleanDirentCache> caches;
     private Random rand = new Random();
+    private LoopImagesDBHelper dbHelper = LoopImagesDBHelper.getInstance();
+
+    private Map<String, DataManager> dataManagers = new HashMap<String, DataManager>();
+    private Map<String, Account> accounts = new HashMap<String, Account>();
 
     private boolean isUpdatingInfo = false;
     private Object updatingInfoLock = new Object();
@@ -245,25 +244,23 @@ public class LoopImagesWidgetService extends Service {
     }
 
     private void downloadImages(int appWidgetId, ImageInfo imageInfo){
-        File file = imageInfo.getFile();
-        SeafDirent seafDirent = imageInfo.getSeafDirent();
-        String filePath = imageInfo.getFilePath();
-        if(seafDirent == null || filePath == null){
+        if(imageInfo == null || imageInfo.getDirInfo() == null){
             return;
         }
+        File file = imageInfo.getFile();
         if(file != null && file.exists()){
-            if(getFileSize(imageInfo.getFile()) == seafDirent.getFileSize()) {
-                queues.get(appWidgetId).push(imageInfo);
+            if(getFileSize(file) == imageInfo.getFileSize()) {
+                dbHelper.setImageDownloadState(imageInfo.getDirInfo().getAccountSignature(), imageInfo.getDirInfo().getRepoId(), imageInfo.getDirInfo().getDirId(), imageInfo.getFilePath(), true);
                 return;
             }else{
                 imageInfo.deleteStorage();
             }
         }
-        int taskID = txService.addDownloadTask(imageInfo.getDirInfo().getAccount(),
+        int taskID = txService.addDownloadTask(LoopImagesWidgetConfigureActivity.getAccount(getApplicationContext(), imageInfo.getDirInfo().getAccountSignature()),
                 imageInfo.getDirInfo().getRepoName(),
                 imageInfo.getDirInfo().getRepoId(),
-                filePath,
-                seafDirent.size);
+                imageInfo.getRemoteFilePath(),
+                imageInfo.getFileSize());
         tasksInProgress.add(new TaskInfo(taskID, appWidgetId, imageInfo));
     }
 
@@ -279,23 +276,6 @@ public class LoopImagesWidgetService extends Service {
             return 0;
         }
         return size;
-    }
-
-    private void removeLeftImages(int appWidgetId){
-        int removeNum = ONCE_REMOVE_IMAGE_NUM;
-        while (removeNum > 0 && queues.get(appWidgetId).getRemoveCount() > LEFT_PREVIOUS_MAX_IMAGES_NUM) {
-            --removeNum;
-            ImageInfo deleteItem = queues.get(appWidgetId).popRemoveItem();
-            if(deleteItem == null) {
-                continue;
-            }
-            deleteItem.deleteStorage();
-            String filePath = deleteItem.getFilePath();
-            if (filePath != null) {
-                Log.d(DEBUG_TAG, "Delete file that exceed storage space: " + filePath + "!!!");
-//                Utils.utilsLogInfo(true, "Delete file that exceed storage space: " + filePath + "!!!");
-            }
-        }
     }
 
     private void checkDownloadTasks(){
@@ -319,14 +299,13 @@ public class LoopImagesWidgetService extends Service {
                 break;
             }
             ++removeNum;
-            SeafDirent seafDirent = item.getSeafDirent();
-            if(seafDirent == null){
+            if(item == null || item.getDirInfo() == null){
                 continue;
             }
             boolean haveSameSize = getFileSize(item.getFile())
-                    == seafDirent.getFileSize();
+                    == item.getFileSize();
             if (info.state == TaskState.FINISHED && haveSameSize) {
-                queues.get(taskInfo.appWidgetId).push(taskInfo.imageInfo);
+                dbHelper.setImageDownloadState(item.getDirInfo().getAccountSignature(), item.getDirInfo().getRepoId(), item.getDirInfo().getDirId(), item.getFilePath(), true);
 //                if (queues.get(taskInfo.appWidgetId).getCount() >= LEFT_FOLLOW_UP_MAX_IMAGES_NUM) {
 //                    shouldDownloads.put(taskInfo.appWidgetId, false);
 //                }
@@ -368,7 +347,7 @@ public class LoopImagesWidgetService extends Service {
             Context context = getApplicationContext();
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
             int appWidgetIds[] = appWidgetManager.getAppWidgetIds(new ComponentName(context, LoopImagesWidget.class));
-            if (imageInfos == null || queues == null || appWidgetIds.length <= 0) {
+            if (appWidgetIds.length <= 0) {
                 addUpdateInfoTask(UPDATE_ALL_WIDGETS, DELETE_NONE_WIDGETS);
                 Message message = updateHandler.obtainMessage();
                 message.what = UPDATE_MESSAGE;
@@ -376,64 +355,46 @@ public class LoopImagesWidgetService extends Service {
                 return results;
             }
             int n = appWidgetIds.length;
-            for (int i = 0; i < n; ++i) {
-                int appWidgetId = appWidgetIds[i];
-                if (i >= imageInfos.size() || i >= queues.size()) {
-                    break;
-                }
-                List<ImageInfo> imageInfo = imageInfos.get(appWidgetId);
-                int m = imageInfo.size();
-                if (m <= 0) {
-                    addUpdateInfoTask(appWidgetId, DELETE_NONE_WIDGETS);
-                    RemoteViews views = getDefalutRemoteViews(appWidgetId);
-                    results.put(appWidgetId, views);
-//                    appWidgetManager.updateAppWidget(appWidgetId, views);
-                    continue;
-                }
+            for (int appWidgetId : appWidgetIds) {
+//                Utils.utilsLogInfo(true, "=======Loopimages widget " + appWidgetId + " update start.");
                 boolean enableDownload = Utils.isWiFiOn() || LoopImagesWidgetConfigureActivity.getDataPlanAllowed(appWidgetId);
                 if (Utils.isNetworkOn() && enableDownload && tasksInProgress.size() < ONCE_UPLOAD_IMAGE_NUM * 2 * n) {
-                    if (queues.get(appWidgetId).getCount() < LEFT_FOLLOW_UP_MAX_IMAGES_NUM && shouldDownloads.get(appWidgetId) == 0) {
+                    if(dbHelper.getImageNum(appWidgetId, true) < MAX_DOWNLOAD_IMAGE_NUM){
                         Log.d(DEBUG_TAG, "Download new images.");
                         int addTaskNum = ONCE_UPLOAD_IMAGE_NUM;
-                        while (addTaskNum > 0) {
-                            downloadImages(appWidgetId, imageInfo.get(rand.nextInt(m)));
+                        int notDownloadedNum = dbHelper.getImageNum(appWidgetId, false);
+                        while (addTaskNum > 0 && notDownloadedNum > 0) {
+                            ImageInfo imageInfo = dbHelper.getImageInfo(appWidgetId, rand.nextInt(notDownloadedNum), false);
+                            downloadImages(appWidgetId, imageInfo);
                             --addTaskNum;
                         }
                     }
-                    if(queues.get(appWidgetId).getCount() >= LEFT_FOLLOW_UP_MAX_IMAGES_NUM || shouldDownloads.get(appWidgetId) != 0){
-                        shouldDownloads.put(appWidgetId, (shouldDownloads.get(appWidgetId)+1)%STOP_DOWNLOAD_TIMES);
-                        if(shouldDownloads.get(appWidgetId) == 0){
-                            queues.get(appWidgetId).removeAll();
-                        }
-                    }
                 }
-                if (queues.get(appWidgetId).isEmpty()) {
+                if (dbHelper.getImageNum(appWidgetId, true) == 0) {
                     RemoteViews views = getDefalutRemoteViews(appWidgetId);
                     results.put(appWidgetId, views);
 //                    appWidgetManager.updateAppWidget(appWidgetId, views);
                     continue;
                 }
                 boolean flag = false;
-                while (!queues.get(appWidgetId).isEmpty()) {
-                    ImageInfo item = queues.get(appWidgetId).next();
+                int downloadedNum = 0;
+                while ((downloadedNum = dbHelper.getImageNum(appWidgetId, true)) > 0) {
+                    ImageInfo item = dbHelper.getImageInfo(appWidgetId, rand.nextInt(downloadedNum), true);
                     if(item == null){
-                        queues.get(appWidgetId).removePreviousItem();
+                        Utils.utilsLogInfo(true, "Get null imageInfo from LoopImageWidgerDBHelper.getImageInfo");
+                        break;
                     }
+                    dbHelper.updateWidgetImageAccessCount(appWidgetId, item.getDirInfo().getAccountSignature(), item.getDirInfo().getRepoId(), item.getDirInfo().getDirId(), item.getFilePath(), 1);
                     Bitmap image = item.getBitMap();
                     if (image == null) {
                         item.deleteStorage();
-                        queues.get(appWidgetId).removePreviousItem();
+                        dbHelper.setImageDownloadState(item.getDirInfo().getAccountSignature(), item.getDirInfo().getRepoId(), item.getDirInfo().getDirId(), item.getFilePath(), false);
                         continue;
                     }
                     Log.d(DEBUG_TAG, "Set new images.");
                     RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.loop_images_widget);
                     views.setImageViewBitmap(R.id.loopimages_imageview, image);
-                    SeafDirent seafDirent = item.getSeafDirent();
-                    if(seafDirent == null){
-                        views = setRemoteViewOnClickActivity(views, appWidgetId,null, null);
-                    }else {
-                        views = setRemoteViewOnClickActivity(views, appWidgetId, item.getDirInfo().toString(), seafDirent.name);
-                    }
+                    views = setRemoteViewOnClickActivity(views, appWidgetId, item.getDirInfo().toString(), Utils.fileNameFromPath(item.getFilePath()));
                     results.put(appWidgetId, views);
 //                    appWidgetManager.updateAppWidget(appWidgetId, views);
                     flag = true;
@@ -444,9 +405,10 @@ public class LoopImagesWidgetService extends Service {
                     results.put(appWidgetId, views);
 //                    appWidgetManager.updateAppWidget(appWidgetId, views);
                 }
-                removeLeftImages(appWidgetId);
-                Log.d(DEBUG_TAG, "=======Loopimages widget "+appWidgetId+" queue info: "+queues.get(appWidgetId).getCount()+" images, "+queues.get(appWidgetId).getRemoveCount()+" remain images.");
-//                Utils.utilsLogInfo(true, "=======Loopimages widget "+appWidgetId+" queue info: "+queues.get(appWidgetId).getCount()+" images, "+queues.get(appWidgetId).getRemoveCount()+" remain images.");
+                if(Utils.isNetworkOn() && enableDownload && dbHelper.getImageNum(appWidgetId, true) >= MAX_DOWNLOAD_IMAGE_NUM) {
+                    dbHelper.removeWidgetImages(appWidgetId, MAX_ACCESS_TIME);
+                }
+//                Utils.utilsLogInfo(true, "=======Loopimages widget "+appWidgetId + " update end.");
             }
         }
         Message message = updateHandler.obtainMessage();
@@ -459,27 +421,11 @@ public class LoopImagesWidgetService extends Service {
         if(updateWidgetSignal == UPDATE_NONE_WIDGETS){
             return;
         }
-        synchronized (imageInfosLock) {
+        synchronized (updateWidgetLock) {
+
+            Utils.utilsLogInfo(true, "=======Loopimages widget update start.");
             Context context = getApplicationContext();
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-
-            if(caches == null){
-                caches = new HashMap<String, AutoCleanDirentCache>();
-            }
-
-            if(queues == null){
-                queues = new HashMap<Integer, LazyQueue>();
-            }
-            if (imageInfos == null || shouldDownloads == null) {
-                updateWidgetSignal = UPDATE_ALL_WIDGETS;
-                imageInfos = new HashMap<Integer, List<ImageInfo>>();
-                shouldDownloads = new HashMap<Integer, Integer>();
-            }
-
-            Map<String, Boolean> notUsedDir = new HashMap<String, Boolean>();
-            for(String dirStr: caches.keySet()){
-                notUsedDir.put(dirStr, true);
-            }
 
             int appWidgetIds[];
             if (updateWidgetSignal != UPDATE_ALL_WIDGETS) {
@@ -488,89 +434,84 @@ public class LoopImagesWidgetService extends Service {
                 appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(context, LoopImagesWidget.class));
             }
 
-            Map<String, List<ImageInfo>> dirImageInfoMapping = new HashMap<String, List<ImageInfo>>();
-
             Map<Integer, List<DirInfo>> widgetDirInfos = new HashMap<Integer, List<DirInfo>>();
             for (int appWidgetId : appWidgetIds) {
-                widgetDirInfos.put(appWidgetId, LoopImagesWidgetConfigureActivity.getDirInfo(getApplicationContext(), appWidgetId));
+                widgetDirInfos.put(appWidgetId, LoopImagesWidgetConfigureActivity.getDirInfo(appWidgetId));
             }
-            for (int i = 0; i < appWidgetIds.length; ++i) {
+
+            for (int appWidgetId : appWidgetIds) {
                 boolean haveUpdated = false;
-                int appWidgetId = appWidgetIds[i];
-                if(!queues.containsKey(appWidgetId)){
-                    queues.put(appWidgetId, new LazyQueue());
-                }
-                List<DirInfo> dirInfos = widgetDirInfos.get(appWidgetId);
-                List<ImageInfo> nImageInfo = Lists.newArrayList();
-                for (DirInfo info : dirInfos) {
-                    if (dirImageInfoMapping.containsKey(info.toString())) {
-                        nImageInfo.addAll(dirImageInfoMapping.get(info.toString()));
+                List<Integer> usedDirIds = Lists.newArrayList();
+                List<DirInfo> dirInfos = Lists.newArrayList();
+                for (DirInfo info : widgetDirInfos.get(appWidgetId)) {
+                    if (info == null) {
                         continue;
                     }
-                    String dirID = LoopImagesWidgetConfigureActivity.getDataManager(info.getAccount()).getDirID(info.getRepoId(), info.getDirPath());
-                    notUsedDir.put(info.toString(), false);
-
-                    if(info.getDirId() != dirID) {
-                        caches.remove(info.toString());
+                    String dirID = getDataManager(info.getAccountSignature()).getDirID(info.getRepoId(), info.getDirPath());
+                    if (!dirID.equals(info.getDirId())) {
+                        synchronized (imageInfosLock) {
+                            dbHelper.deleteAllWidgetDir(info.getAccountSignature(), info.getRepoId(), info.getDirId());
+                        }
                         info.setDirId(dirID);
                         haveUpdated = true;
                     }
-                    AutoCleanDirentCache cache = null;
-                    if(caches.containsKey(info.toString())){
-                        cache = caches.get(info.toString());
-                    }else {
-                        try {
-                            List<SeafDirent> seafDirents = LoopImagesWidgetConfigureActivity.getDataManager(info.getAccount()).getCachedDirents(info.getRepoId(), info.getDirPath());
-                            cache = new AutoCleanDirentCache("LoopImages-dirent-" + dirID, seafDirents);
-                        } catch (IOException e) {
-                            Log.e(DEBUG_TAG, "Error to save cache.", e);
-                        }
+                    int dirInfoID = -1;
+                    synchronized (imageInfosLock) {
+                        dirInfoID = dbHelper.widgetContainDir(appWidgetId, info.getAccountSignature(), info.getRepoId(), info.getDirId());
                     }
-                    if(cache == null){
+                    if (dirInfoID >= 0) {
+                        usedDirIds.add(dirInfoID);
+                        dirInfos.add(info);
                         continue;
                     }
-                    caches.put(info.toString(), cache);
-                    List<ImageInfo> files = Lists.newArrayList();
-                    for(int k=0;k<cache.getCount();++k){
-                        boolean flag = false;
-                        SeafDirent seafDirent = cache.get(k);
-                        for (int j = 0; j < FILE_SUFIX.length; ++j) {
-                            if (seafDirent.name.toLowerCase().endsWith(FILE_SUFIX[j])) {
-                                flag = true;
-                                break;
+                    synchronized (imageInfosLock) {
+                        dirInfoID = dbHelper.getDirInfoID(info.getAccountSignature(), info.getRepoId(), info.getDirId());
+                    }
+                    if (dirInfoID < 0) {
+                        DataManager dataManager = getDataManager(info.getAccountSignature());
+                        if(dataManager != null) {
+                            List<SeafDirent> seafDirents = dataManager.getCachedDirents(info.getRepoId(), info.getDirPath());
+                            synchronized (imageInfosLock) {
+                                dirInfoID = dbHelper.addDirInfo(info.getAccountSignature(), info.getRepoId(), info.getRepoName(), info.getDirId(), info.getDirPath());
+                            }
+                            if (dirInfoID >= 0) {
+                                for (SeafDirent dirent : seafDirents) {
+                                    synchronized (imageInfosLock) {
+                                        int imageID = dbHelper.addImage(dirInfoID, Utils.pathJoin(dataManager.getRepoDir(info.getRepoName(), info.getRepoId()), info.getDirPath(), dirent.name), dirent.size);
+                                        if(imageID >= 0) {
+                                            dbHelper.addWidgetImage(appWidgetId, dirInfoID, imageID);
+                                        }
+                                    }
+                                }
+                                usedDirIds.add(dirInfoID);
                             }
                         }
-                        if (flag) {
-                            ImageInfo item = new ImageInfo(info, cache, k);
-//                            File itemFile = item.getFile();
-//                            if(itemFile != null && itemFile.exists()){
-//                                queues.get(appWidgetId).push(item);
-//                            }
-                            files.add(item);
+                    }else {
+                        usedDirIds.add(dirInfoID);
+                        synchronized (imageInfosLock) {
+                            dbHelper.addWidgetDir(appWidgetId, dirInfoID);
                         }
                     }
-                    nImageInfo.addAll(files);
+                    dirInfos.add(info);
                 }
-                if(!haveUpdated || imageInfos.containsKey(appWidgetId) && imageInfos.get(appWidgetId).equals(nImageInfo)){
-                    continue;
+
+                synchronized (imageInfosLock) {
+                    dbHelper.deleteUnusedWidgetDir(appWidgetId, usedDirIds);
                 }
-                imageInfos.put(appWidgetId, nImageInfo);
-                shouldDownloads.put(appWidgetId, 0);
-                if(haveUpdated){
+
+                if (haveUpdated) {
                     List<String> dirInfoStrs = new ArrayList<String>();
-                    for(DirInfo dirInfo: dirInfos){
+                    for (DirInfo dirInfo : dirInfos) {
                         dirInfoStrs.add(dirInfo.toString());
                     }
                     SettingsManager.instance().setLoopImagesWidgetDirInfo(appWidgetId, dirInfoStrs);
                 }
             }
-            if(updateWidgetSignal == UPDATE_ALL_WIDGETS) {
-                for (String dirStr : notUsedDir.keySet()) {
-                    if (notUsedDir.get(dirStr)) {
-                        notUsedDir.remove(dirStr);
-                    }
-                }
+
+            synchronized (imageInfosLock) {
+                dbHelper.deleteUnusedDirs();
             }
+            Utils.utilsLogInfo(true, "=======Loopimages widget update end.");
         }
     }
 
@@ -578,7 +519,7 @@ public class LoopImagesWidgetService extends Service {
         if(deleteAppWidgetSignal == DELETE_NONE_WIDGETS){
             return;
         }
-        synchronized (imageInfosLock) {
+        synchronized (updateWidgetLock) {
             Context context = getApplicationContext();
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
             int appWidgetIds[];
@@ -588,17 +529,59 @@ public class LoopImagesWidgetService extends Service {
                 appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(context, LoopImagesWidget.class));
             }
             for(int appWidgetId: appWidgetIds) {
-                if (imageInfos != null && imageInfos.containsKey(appWidgetId)) {
-                    imageInfos.remove(appWidgetId);
-                }
-                if (queues != null && queues.containsKey(appWidgetId)) {
-                    queues.remove(appWidgetId);
-                }
-                if (shouldDownloads != null && shouldDownloads.containsKey(appWidgetId)) {
-                    shouldDownloads.remove(appWidgetId);
+                synchronized (imageInfosLock) {
+                    dbHelper.deleteWidget(appWidgetId);
                 }
             }
+            synchronized (imageInfosLock) {
+                dbHelper.deleteUnusedDirs();
+            }
         }
+    }
+
+    private DataManager getDataManager(String accountSignature){
+        if(dataManagers.containsKey(accountSignature)){
+            return dataManagers.get(accountSignature);
+        }
+        Account account = LoopImagesWidgetConfigureActivity.getAccount(getApplicationContext(), accountSignature);
+        if(account == null){
+            return null;
+        }
+        DataManager dataManager = new DataManager(account);
+        dataManagers.put(accountSignature, dataManager);
+        return dataManager;
+    }
+
+    private void clearAccountCache(){
+        accounts.clear();
+        dataManagers.clear();
+    }
+
+    private int addDirInfoToDB(DirInfo info){
+        DataManager dataManager = getDataManager(info.getAccountSignature());
+        if(dataManager == null){
+            return -1;
+        }
+        List<SeafDirent> seafDirents = dataManager.getCachedDirents(info.getRepoId(), info.getDirPath());
+        int dirInfoID = dbHelper.addDirInfo(info.getAccountSignature(), info.getRepoId(), info.getRepoName(), info.getDirId(), info.getDirPath());
+
+        if(dirInfoID < 0){
+            return -1;
+        }
+        for(SeafDirent dirent : seafDirents){
+            int imageID = dbHelper.addImage(dirInfoID, Utils.pathJoin(dataManager.getRepoDir(info.getRepoName(), info.getRepoId()), info.getDirPath(), dirent.name), dirent.size);
+
+        }
+        return dirInfoID;
+    }
+
+    private boolean checkIsImage(String fileName){
+        for (int j = 0; j < FILE_SUFIX.length; ++j) {
+            if (fileName.toLowerCase().endsWith(FILE_SUFIX[j])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected class TaskInfo{
@@ -610,84 +593,6 @@ public class LoopImagesWidgetService extends Service {
             this.taskID = taskID;
             this.appWidgetId = appWidgetId;
             this.imageInfo = imageInfo;
-        }
-    }
-
-    protected class LazyQueue{
-        private LinkedList<ImageInfo> data;
-        private LinkedList<ImageInfo> reserve;
-        private LinkedList<ImageInfo> remove;
-
-        public LazyQueue() {
-            data = Lists.newLinkedList();
-            reserve = Lists.newLinkedList();
-            remove = Lists.newLinkedList();
-        }
-
-        public void push(ImageInfo info){
-            data.add(info);
-        }
-
-        public ImageInfo popRemoveItem(){
-            if(remove.size() <= 0){
-                return null;
-            }
-            return remove.pop();
-        }
-
-        public int getCount(){
-            return data.size() + reserve.size();
-        }
-
-        public int getRemoveCount(){
-            return remove.size();
-        }
-
-        public int getTotalCount(){
-            return getCount() + getRemoveCount();
-        }
-
-        public boolean isEmpty(){
-            return data.isEmpty() && reserve.isEmpty() && remove.isEmpty();
-        }
-
-        public ImageInfo next(){
-            if(data.size() <= 0 && reserve.size() <= 0 && remove.size() <= 0){
-                return null;
-            }
-            if(data.size() <= 0 && reserve.size() > 0){
-                ImageInfo res = reserve.pop();
-                reserve.add(res);
-                return res;
-            }
-            if(data.size() <= 0 && reserve.size() <= 0){
-                ImageInfo res = remove.pop();
-                remove.add(res);
-                return res;
-            }
-            ImageInfo res = data.pop();
-            reserve.add(res);
-            return res;
-        }
-
-        public void removePreviousItem(){
-            if(reserve.size() > 0){
-                remove.add(reserve.removeLast());
-            }
-        }
-
-        public void removeAll(){
-            remove.addAll(data);
-            remove.addAll(reserve);
-            data.clear();
-            reserve.clear();
-        }
-
-        public ImageInfo back(){
-            if(data.size() <= 0){
-                return null;
-            }
-            return data.getLast();
         }
     }
 
@@ -779,91 +684,5 @@ public class LoopImagesWidgetService extends Service {
         }
     }
 
-    class ImageInfo{
-        private DirInfo dirInfo;
-        private int index;
-        private DirentCache cache;
-        private static final int MAX_BITMAP_EDGE = 1024;
 
-        public ImageInfo(DirInfo dirInfo, DirentCache cache, int index){
-            this.dirInfo = dirInfo;
-            this.cache = cache;
-            this.index = index;
-        }
-
-        public DirInfo getDirInfo() {
-            return dirInfo;
-        }
-
-        public SeafDirent getSeafDirent() {
-            if(this.cache == null){
-                return null;
-            }
-            return cache.get(index);
-        }
-
-        public String getFilePath(){
-            SeafDirent seafDirent = getSeafDirent();
-            if(seafDirent == null){
-                return null;
-            }
-            return Utils.pathJoin(getDirInfo().getDirPath(), seafDirent.name);
-        }
-
-        public File getFile(){
-            DataManager dataManager = new DataManager(getDirInfo().getAccount());
-            String filePath = getFilePath();
-            if(filePath == null){
-                return null;
-            }
-            File file = dataManager.getLocalRepoFile(getDirInfo().getRepoName(), getDirInfo().getRepoId(), filePath);
-            return file;
-        }
-
-        public boolean exist(){
-            return getFile() != null;
-        }
-
-        public Bitmap getBitMap(){
-            File file = getFile();
-            if(file == null || !file.exists()){
-                return null;
-            }
-            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-            if(bitmap == null){
-                return null;
-            }
-            if(bitmap.getHeight() > MAX_BITMAP_EDGE || bitmap.getWidth() > MAX_BITMAP_EDGE){
-                float scale = MAX_BITMAP_EDGE/(float)Math.max(bitmap.getHeight(), bitmap.getWidth());
-                Matrix matrix = new Matrix();
-                matrix.postScale(scale, scale);
-                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-            }
-            return bitmap;
-        }
-
-        public boolean deleteStorage(){
-            File file = getFile();
-            if(file == null){
-                return true;
-            }
-            return file.delete();
-        }
-    }
-
-    protected class AutoCleanDirentCache extends DirentCache{
-        public AutoCleanDirentCache(String name) throws IOException {
-            super(name);
-        }
-
-        public AutoCleanDirentCache(String name, List<SeafDirent> caches) throws IOException{
-            super(name, caches);
-        }
-
-        @Override
-        protected void finalize() throws Throwable {
-            super.finalize();
-            super.delete();
-        }
-    }
 }

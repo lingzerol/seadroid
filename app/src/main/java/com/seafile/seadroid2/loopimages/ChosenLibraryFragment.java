@@ -54,7 +54,7 @@ public class ChosenLibraryFragment extends Fragment {
         Context context = mActivity.getApplicationContext();
         View rootView = mActivity.getLayoutInflater().inflate(R.layout.loop_images_widget_chosen_library_fragment, container, false);
 
-        chosenlibraryListAdapter = new ChosenLibraryAdapter();
+        chosenlibraryListAdapter = new ChosenLibraryAdapter(this);
 
         mDoneBtn = (Button) rootView.findViewById(R.id.loopimages_chosen_library_done_btn);
         mDoneBtn.setOnClickListener(new View.OnClickListener() {
@@ -81,7 +81,7 @@ public class ChosenLibraryFragment extends Fragment {
         chosenlibraryListView = (ListView) rootView.findViewById(R.id.loopimages_chosen_library_lv);
         chosenlibraryListView.setAdapter(chosenlibraryListAdapter);
 
-        List<DirInfo> dirInfos = mActivity.getDirInfo(context, mActivity.getAppWidgetId());
+        List<DirInfo> dirInfos = mActivity.getDirInfo(mActivity.getAppWidgetId());
 
         chosenlibraryListAdapter.setDirs(dirInfos);
 
@@ -108,7 +108,7 @@ public class ChosenLibraryFragment extends Fragment {
         final Account account = data.getParcelableExtra(SeafilePathChooserActivity.DATA_ACCOUNT);
 
         if (repoName != null && repoId != null && dirPath != null && dirId != null && account != null) {
-            chosenlibraryListAdapter.addDir(new DirInfo(account, repoId, repoName, dirId, dirPath));
+            chosenlibraryListAdapter.addDir(new DirInfo(account.getSignature(), repoId, repoName, dirId, dirPath));
             if (chosenlibraryListAdapter.getCount() > 0)
                 mDoneBtn.setVisibility(View.VISIBLE);
         }

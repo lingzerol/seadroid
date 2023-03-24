@@ -1,5 +1,7 @@
 package com.seafile.seadroid2.loopimages;
 
+import android.text.TextUtils;
+
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SeadroidApplication;
 import com.seafile.seadroid2.SettingsManager;
@@ -10,6 +12,7 @@ import com.seafile.seadroid2.data.SeafDirent;
 import com.seafile.seadroid2.ui.NavContext;
 import com.seafile.seadroid2.util.PinyinUtils;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DirInfo {
-    private Account account;
+    private String accountSignature;
     private String repoId;
     private String repoName;
     private String dirId;
@@ -31,26 +34,26 @@ public class DirInfo {
 
     public static final String spliter = ",";
 
-    public DirInfo(Account account, NavContext nav){
-        this.account = account;
+    public DirInfo(String accountSignature, NavContext nav){
+        this.accountSignature = accountSignature;
         this.repoId = nav.getRepoID();
         this.repoName = nav.getRepoName();
         this.dirId = nav.getDirID();
         this.dirPath = nav.getDirPath();
     }
 
-    public DirInfo(Account account, Map<String, String> info){
+    public DirInfo(String accountSignature, Map<String, String> info){
         if(!info.containsKey(LOOPIMAGES_REPO_ID_KEY) ||
                 !info.containsKey(LOOPIMAGES_REPO_NAME_KEY) ||
                 !info.containsKey(LOOPIMAGES_DIR_ID_KEY) ||
                 !info.containsKey(LOOPIMAGES_DIR_PATH_KEY)){
-            this.account = null;
+            this.accountSignature = null;
             this.repoId = null;
             this.repoName = null;
             this.dirId = null;
             this.dirPath = null;
         }else{
-            this.account = account;
+            this.accountSignature = accountSignature;
             this.repoId = info.get(LOOPIMAGES_REPO_ID_KEY);
             this.repoName = info.get(LOOPIMAGES_REPO_NAME_KEY);
             this.dirId = info.get(LOOPIMAGES_DIR_ID_KEY);
@@ -58,16 +61,16 @@ public class DirInfo {
         }
     }
 
-    public DirInfo(Account account, String repoId, String repoName, String dirId, String dirPath){
-        this.account = account;
+    public DirInfo(String accountSignature, String repoId, String repoName, String dirId, String dirPath){
+        this.accountSignature = accountSignature;
         this.repoId = repoId;
         this.repoName = repoName;
         this.dirId = dirId;
         this.dirPath = dirPath;
     }
 
-    public Account getAccount(){
-        return this.account;
+    public String getAccountSignature(){
+        return this.accountSignature;
     }
 
     public String getRepoId(){
@@ -90,14 +93,14 @@ public class DirInfo {
         return this.dirPath;
     }
 
-    public List<SeafDirent> getSeafDirents(){
-        DataManager dataManager = new DataManager(this.account);
-        return dataManager.getCachedDirents(this.repoId, this.dirPath);
-    }
+//    public List<SeafDirent> getSeafDirents(){
+//        DataManager dataManager = new DataManager(this.account);
+//        return dataManager.getCachedDirents(this.repoId, this.dirPath);
+//    }
 
     public Map<String, String> toMap(){
         Map<String, String> res = new HashMap<String, String>();
-        res.put(LOOPIMAGES_ACCOUNT_SIGNATURE_KEY, getAccount().getSignature());
+        res.put(LOOPIMAGES_ACCOUNT_SIGNATURE_KEY, this.accountSignature);
         res.put(LOOPIMAGES_REPO_ID_KEY, getRepoId());
         res.put(LOOPIMAGES_REPO_NAME_KEY, getRepoName());
         res.put(LOOPIMAGES_DIR_ID_KEY, getDirId());
@@ -107,7 +110,7 @@ public class DirInfo {
 
     public String toString(){
         String s = "";
-        s += getAccount().getSignature();
+        s += getAccountSignature();
         s += spliter + getRepoId();
         s += spliter + getRepoName();
         s += spliter + getDirId();
@@ -115,17 +118,35 @@ public class DirInfo {
         return s;
     }
 
+    public static DirInfo getDirInfoFromStringList(List<String> dirInfo){
+        if(dirInfo.size() != 5){
+            return null;
+        }
+        return new DirInfo(dirInfo.get(0), dirInfo.get(1), dirInfo.get(2), dirInfo.get(3), dirInfo.get(4));
+    }
+
+    public static DirInfo getDirInfoFromString(String dirInfoStr){
+        if(dirInfoStr == null || dirInfoStr.length() == 0){
+            return null;
+        }
+        List<String> infoList = Arrays.asList(TextUtils.split(dirInfoStr, DirInfo.spliter));
+        if(infoList.size() != 5){
+            return null;
+        }
+        return getDirInfoFromStringList(infoList);
+    }
+
     public static class DirInfoComparator implements Comparator<DirInfo> {
 
         @Override
         public int compare(DirInfo itemA, DirInfo itemB) {
-            if(itemA.getAccount() == itemB.getAccount()){
+            if(itemA.getAccountSignature().equals(itemB.getAccountSignature())){
                 if(itemA.getRepoName() == itemB.getRepoName()){
                     return compareString(itemA.getDirPath(), itemB.getDirPath());
                 }
                 return compareString(itemA.getRepoName(), itemB.getRepoName());
             }
-            return compareString(itemA.getAccount().name, itemB.getAccount().name);
+            return compareString(itemA.getAccountSignature(), itemB.getAccountSignature());
         }
 
         private int compareString(String itemA, String itemB){

@@ -35,11 +35,6 @@ public class LoopImagesWidgetConfigureActivity extends BaseActivity {
     private static final String PREF_PREFIX_KEY = "appwidget_";
     public static final int CHOOSE_LOOPIMAGES_REQUEST = 1;
 
-    private static AccountManager accountManager = null;
-    private static List<Account> accountList = null;
-    private static Map<String, DataManager> dataManagerMap = null;
-    private static Map<String, Account> signatureAccount = null;
-
     private ViewPager mViewPager;
     private LinePageIndicator mIndicator;
 
@@ -97,80 +92,36 @@ public class LoopImagesWidgetConfigureActivity extends BaseActivity {
 //        }
 //    }
 
+    public static Account getAccount(Context context, String accountSignature){
+        AccountManager accountManager = new AccountManager(context);
+        for(Account account: accountManager.getSignedInAccountList()){
+            if(account != null && account.getSignature().equals(accountSignature)){
+                return account;
+            }
+        }
+        return null;
+    }
 
     public void saveDataPlanAllowed(boolean isAllowed) {
         SettingsManager.instance().saveLoopImagesWidgetDataPlanAllowed(mAppWidgetId, isAllowed);
     }
 
-    static public boolean getDataPlanAllowed(int mAppWidgetId) {
+    public static boolean getDataPlanAllowed(int mAppWidgetId) {
         return SettingsManager.instance().getLoopImagesWidgetDataPlanAllowed(mAppWidgetId);
     }
 
-    static public DirInfo getDirInfoFromStringList(Context context, List<String> dirInfo){
-        init(context);
-        if(dirInfo.size() != 5){
-            return null;
-        }
-        Account account = signatureAccount.get(dirInfo.get(0));
-        return new DirInfo(account, dirInfo.get(1), dirInfo.get(2), dirInfo.get(3), dirInfo.get(4));
-    }
 
-    static public DirInfo getDirInfoFromString(Context context, String dirInfoStr){
-        if(dirInfoStr == null || dirInfoStr.length() == 0){
-            return null;
-        }
-        init(context);
-        List<String> infoList = Arrays.asList(TextUtils.split(dirInfoStr, DirInfo.spliter));
-        if(infoList.size() != 5){
-            return null;
-        }
-        return getDirInfoFromStringList(context, infoList);
-    }
-
-    static public List<DirInfo> getDirInfo(Context context, int appWidgetId) {
-        init(context);
+    public static List<DirInfo> getDirInfo(int appWidgetId) {
         List<String> dirInfoStrs = SettingsManager.instance().getLoopImagesWidgetDirInfo(appWidgetId);
         List<DirInfo> dirInfos = new ArrayList<DirInfo>();
         for(String info: dirInfoStrs){
-            dirInfos.add(getDirInfoFromString(context, info));
+            dirInfos.add(DirInfo.getDirInfoFromString(info));
         }
         return dirInfos;
     }
 
-    static public void deleteDirInfo(int appWidgetId) {
+    public static void deleteDirInfo(int appWidgetId) {
         SettingsManager.instance().deleteLoopImagesWidgetInfo(appWidgetId);
-    }
-
-    public static void init(Context context){
-
-        if(accountManager == null) {
-            accountManager = new AccountManager(context);
-        }
-
-        if(accountList == null) {
-            accountList = accountManager.getAccountList();
-        }
-
-        if(signatureAccount == null) {
-            signatureAccount = new HashMap<String, Account>();
-            for(Account taccount: accountList){
-                signatureAccount.put(taccount.getSignature(), taccount);
-            }
-        }
-
-        if(dataManagerMap == null){
-            dataManagerMap = new HashMap<String, DataManager>();
-        }
-    }
-
-    public static DataManager getDataManager(Account account){
-        if(dataManagerMap == null){
-            dataManagerMap = new HashMap<String, DataManager>();
-        }
-        if(!dataManagerMap.containsKey(account.getSignature())){
-            dataManagerMap.put(account.getSignature(), new DataManager(account));
-        }
-        return dataManagerMap.get(account.getSignature());
     }
 
     public LinePageIndicator getIndicator(){
@@ -197,9 +148,6 @@ public class LoopImagesWidgetConfigureActivity extends BaseActivity {
         setResult(RESULT_CANCELED);
 
         setContentView(R.layout.loop_images_configure_activity_layout);
-
-        init(getApplicationContext());
-
         // Find the widget id from the intent.
         Intent intent = getIntent();
 

@@ -286,7 +286,7 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
 
             if(syncs != null && !syncs.isEmpty()) {
                 while (lastSyncIndex < syncs.size()) {
-                    if(syncs.get(lastSyncIndex) != null){
+                    if(syncs.get(lastSyncIndex) != null && UploadManager.isEnableCloudUploadSync(seafileAccount, syncs.get(lastSyncIndex).getSyncType())){
                         syncs.get(lastSyncIndex).performSync(seafileAccount, dataManager, syncResult);
                     }
                     ++lastSyncIndex;

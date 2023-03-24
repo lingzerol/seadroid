@@ -108,6 +108,7 @@ public class UploadDBHelper extends SQLiteOpenHelper {
         );
 
         if(c.getCount() == 0){
+            c.close();
             return -1;
         }
         c.moveToNext();

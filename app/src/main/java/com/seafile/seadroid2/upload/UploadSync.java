@@ -147,4 +147,8 @@ public abstract class UploadSync {
     public String getDataPath(){
         return dataPath;
     }
+
+    public int getSyncType(){
+        return syncType;
+    }
 }

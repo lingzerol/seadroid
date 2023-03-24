@@ -233,7 +233,7 @@ public class DataManager {
      * say "ABC", their top dir would be "ABC", "ABC (1)", "ABC (2)", etc. The
      * mapping (repoID, dir) is stored in a database table.
      */
-    private synchronized String getRepoDir(String repoName, String repoID) throws RuntimeException {
+    public synchronized String getRepoDir(String repoName, String repoID) throws RuntimeException {
         File repoDir;
 
         // Check if there is a record in database

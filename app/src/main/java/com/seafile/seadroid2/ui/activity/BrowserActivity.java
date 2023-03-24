@@ -2449,7 +2449,6 @@ public class BrowserActivity extends BaseActivity
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(getApplicationContext());
         int appWidgetIds[] = appWidgetManager.getAppWidgetIds(new ComponentName(getApplicationContext(), LoopImagesWidget.class));
         if(appWidgetIds.length > 0) {
-            LoopImagesWidgetConfigureActivity.init(getApplicationContext());
             Intent intent = new Intent(getApplicationContext(), LoopImagesWidgetService.class);
             intent.putExtra(LoopImagesWidgetService.DELAY_UPDATE_ALL_SIGNAL, true);
             getApplicationContext().startService(intent);

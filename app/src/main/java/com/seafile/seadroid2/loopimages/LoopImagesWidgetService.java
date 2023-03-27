@@ -41,10 +41,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 
 public class LoopImagesWidgetService extends Service {
@@ -434,28 +436,55 @@ public class LoopImagesWidgetService extends Service {
                 appWidgetIds = appWidgetManager.getAppWidgetIds(new ComponentName(context, LoopImagesWidget.class));
             }
 
-            Map<Integer, List<DirInfo>> widgetDirInfos = new HashMap<Integer, List<DirInfo>>();
-            for (int appWidgetId : appWidgetIds) {
-                widgetDirInfos.put(appWidgetId, LoopImagesWidgetConfigureActivity.getDirInfo(appWidgetId));
-            }
 
+            Set<String> dirInfoSets = new HashSet<String>();
             for (int appWidgetId : appWidgetIds) {
                 boolean haveUpdated = false;
                 List<Integer> usedDirIds = Lists.newArrayList();
                 List<DirInfo> dirInfos = Lists.newArrayList();
-                for (DirInfo info : widgetDirInfos.get(appWidgetId)) {
+                for (DirInfo info : LoopImagesWidgetConfigureActivity.getDirInfo(appWidgetId)) {
                     if (info == null) {
                         continue;
                     }
+                    int dirInfoID = -1;
                     String dirID = getDataManager(info.getAccountSignature()).getDirID(info.getRepoId(), info.getDirPath());
                     if (!dirID.equals(info.getDirId())) {
-                        synchronized (imageInfosLock) {
-                            dbHelper.deleteAllWidgetDir(info.getAccountSignature(), info.getRepoId(), info.getDirId());
+                        if(!dirInfoSets.contains(info.toString())) {
+//                        synchronized (imageInfosLock) {
+//                            deleteDirs.add(dbHelper.getDirInfoID(info.getAccountSignature(), info.getRepoId(), info.getDirId()));
+////                            dbHelper.deleteAllWidgetDir(info.getAccountSignature(), info.getRepoId(), info.getDirId());
+//                        }
+//                        synchronized (imageInfosLock){
+//                            dbHelper.deleteWidgetDir(appWidgetId, info.getAccountSignature(), info.getRepoId(), info.getDirId());
+//                        }
+                            synchronized (imageInfosLock) {
+                                dirInfoID = dbHelper.getDirInfoID(info.getAccountSignature(), info.getRepoId(), info.getDirId());
+                            }
+                            if(dirInfoID >= 0){
+                                synchronized (imageInfosLock) {
+                                    dbHelper.updateDirInfoDirID(dirInfoID, dirID);
+                                }
+                                synchronized (imageInfosLock){
+                                    dbHelper.setDirImagePreserve(dirInfoID, false);
+                                }
+                                DataManager dataManager = getDataManager(info.getAccountSignature());
+                                if(dataManager != null) {
+                                    List<SeafDirent> seafDirents = dataManager.getCachedDirents(info.getRepoId(), info.getDirPath());
+                                    for (SeafDirent dirent : seafDirents) {
+                                        synchronized (imageInfosLock) {
+                                            dbHelper.addImage(dirInfoID, Utils.pathJoin(dataManager.getRepoDir(info.getRepoName(), info.getRepoId()), info.getDirPath(), dirent.name), dirent.size);
+                                        }
+                                    }
+                                    synchronized (imageInfosLock) {
+                                        dbHelper.deleteDirUnPreserveImage(dirInfoID);
+                                    }
+                                }
+                            }
+                            dirInfoSets.add(info.toString());
                         }
                         info.setDirId(dirID);
                         haveUpdated = true;
                     }
-                    int dirInfoID = -1;
                     synchronized (imageInfosLock) {
                         dirInfoID = dbHelper.widgetContainDir(appWidgetId, info.getAccountSignature(), info.getRepoId(), info.getDirId());
                     }
@@ -487,6 +516,26 @@ public class LoopImagesWidgetService extends Service {
                             }
                         }
                     }else {
+                        if(haveUpdated){
+                            DataManager dataManager = getDataManager(info.getAccountSignature());
+                            if(dataManager != null) {
+                                List<SeafDirent> seafDirents = dataManager.getCachedDirents(info.getRepoId(), info.getDirPath());
+                                synchronized (imageInfosLock) {
+                                    dbHelper.setDirImagePreserve(dirInfoID, false);
+                                }
+                                for (SeafDirent dirent : seafDirents) {
+                                    synchronized (imageInfosLock) {
+                                        int imageID = dbHelper.addImage(dirInfoID, Utils.pathJoin(dataManager.getRepoDir(info.getRepoName(), info.getRepoId()), info.getDirPath(), dirent.name), dirent.size);
+                                        if(imageID >= 0) {
+                                            dbHelper.addWidgetImage(appWidgetId, dirInfoID, imageID);
+                                        }
+                                    }
+                                }
+                                synchronized (imageInfosLock) {
+                                    dbHelper.deleteDirUnPreserveImage(dirInfoID);
+                                }
+                            }
+                        }
                         usedDirIds.add(dirInfoID);
                         synchronized (imageInfosLock) {
                             dbHelper.addWidgetDir(appWidgetId, dirInfoID);

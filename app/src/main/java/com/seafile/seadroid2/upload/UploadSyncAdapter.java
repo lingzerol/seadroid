@@ -415,6 +415,10 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
         }
         return false;
     }
+
+    public void clearTasksInProgress(){
+        tasksInProgress.clear();
+    }
 }
 
 

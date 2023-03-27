@@ -49,7 +49,7 @@ public abstract class UploadSync {
         if(isCurrentAccount) {
             SeadroidApplication.getInstance().setSyncType(this.syncType);
             SeadroidApplication.getInstance().setScanUploadStatus(SyncStatus.SCANNING);
-            EventBus.getDefault().post(UploadManager.getSyncName(this.syncType) + " sync start");
+            EventBus.getDefault().post(new SyncEvent("start"));
         }
         try {
             String accountSignature = seafileAccount.getSignature();
@@ -77,6 +77,7 @@ public abstract class UploadSync {
                 return;
             }
 
+            adapter.clearTasksInProgress();
             uploadContents(syncResult, dataManager);
 
             if (isCancelled()) {
@@ -114,7 +115,7 @@ public abstract class UploadSync {
         if(isCurrentAccount) {
             SeadroidApplication.getInstance().setScanUploadStatus(SyncStatus.SCAN_END);
             SettingsManager.instance().saveUploadCompletedTime(Utils.getSyncCompletedTime());
-            EventBus.getDefault().post(new SyncEvent(UploadManager.getSyncName(this.syncType) + " sync end"));
+            EventBus.getDefault().post(new SyncEvent("end"));
         }
     }
 

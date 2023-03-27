@@ -51,6 +51,7 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
     }
 
     private void dropAllTables(SQLiteDatabase db){
+        deleteAllDirs();
         dropWidgetImageTable(db);
         dropImageInfoTable(db);
         dropDirInfoTable(db);
@@ -191,6 +192,15 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         return dirInfo;
     }
 
+    public void updateDirInfoDirID(int dirInfoID, String dirID){
+        if(dirInfoID < 0){
+            return;
+        }
+        ContentValues value = new ContentValues();
+        value.put(DIR_INFO_COLUMN_DIR_ID, dirID);
+        database.update(DIR_INFO_TABLE_NAME, value, DIR_INFO_COLUMN_ID + " = ? ", new String[]{Integer.toString(dirInfoID)});
+    }
+
     // image info table
     private static final String IMAGE_INFO_TABLE_NAME = "ImageInfo";
     private static final String IMAGE_INFO_COLUMN_ID = "id";
@@ -198,12 +208,14 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
     private static final String IMAGE_INFO_COLUMN_FILE_PATH = "file_path";
     private static final String IMAGE_INFO_COLUMN_FILE_SIZE = "file_size";
     private static final String IMAGE_INFO_COLUMN_DOWNLOADED = "downloaded";
+    private static final String IMAGE_INFO_COLUMN_PRESERVE = "preserve";
     private static final String[] ImageInfoProjection = {
             IMAGE_INFO_COLUMN_ID,
             IMAGE_INFO_COLUMN_DIR_INFO_ID,
             IMAGE_INFO_COLUMN_FILE_PATH,
             IMAGE_INFO_COLUMN_FILE_SIZE,
             IMAGE_INFO_COLUMN_DOWNLOADED,
+            IMAGE_INFO_COLUMN_PRESERVE,
     };
 
     private void createImageInfoTable(SQLiteDatabase db) {
@@ -212,21 +224,25 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
                 + IMAGE_INFO_COLUMN_DIR_INFO_ID + " TEXT NOT NULL, "
                 + IMAGE_INFO_COLUMN_FILE_PATH + " TEXT NOT NULL, "
                 + IMAGE_INFO_COLUMN_FILE_SIZE + " BIGINT NOT NULL, "
-                + IMAGE_INFO_COLUMN_DOWNLOADED + " INTEGER NOT NULL DEFAULT 0)");
+                + IMAGE_INFO_COLUMN_DOWNLOADED + " INTEGER NOT NULL DEFAULT 0,"
+                + IMAGE_INFO_COLUMN_PRESERVE + " INTEGER NOT NULL DEFAULT 1);");
         db.execSQL("CREATE INDEX " + IMAGE_INFO_COLUMN_DIR_INFO_ID + "_image_index ON " + IMAGE_INFO_TABLE_NAME
                 + " (" + IMAGE_INFO_COLUMN_DIR_INFO_ID + ");");
         db.execSQL("CREATE INDEX " + IMAGE_INFO_COLUMN_FILE_PATH + "_image_index ON " + IMAGE_INFO_TABLE_NAME
                 + " (" + IMAGE_INFO_COLUMN_FILE_PATH + ");");
         db.execSQL("CREATE INDEX " + IMAGE_INFO_COLUMN_DOWNLOADED + "_image_index ON " + IMAGE_INFO_TABLE_NAME
                 + " (" + IMAGE_INFO_COLUMN_DOWNLOADED + ");");
+        db.execSQL("CREATE INDEX " + IMAGE_INFO_COLUMN_PRESERVE + "_image_index ON " + IMAGE_INFO_TABLE_NAME
+                + " (" + IMAGE_INFO_COLUMN_PRESERVE + ");");
     }
 
-    private class ImageDBInfo {
+    public class ImageDBInfo {
         int id;
         int dirInfoID;
         String filePath;
         long fileSize;
         int downloaded;
+        int preserve;
     }
 
     private void dropImageInfoTable(SQLiteDatabase db){
@@ -274,6 +290,7 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         imageInfo.filePath = c.getString(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_PATH));
         imageInfo.fileSize = c.getLong(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_SIZE));
         imageInfo.downloaded = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_DOWNLOADED));
+        imageInfo.preserve = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_PRESERVE));
         c.close();
         return imageInfo;
     }
@@ -299,6 +316,7 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         imageInfo.filePath = c.getString(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_PATH));
         imageInfo.fileSize = c.getLong(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_SIZE));
         imageInfo.downloaded = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_DOWNLOADED));
+        imageInfo.preserve = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_PRESERVE));
         c.close();
         return imageInfo;
     }
@@ -325,11 +343,59 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
             imageInfo.filePath = c.getString(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_PATH));
             imageInfo.fileSize = c.getLong(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_SIZE));
             imageInfo.downloaded = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_DOWNLOADED));
+            imageInfo.preserve = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_PRESERVE));
             res.add(imageInfo);
         }
         c.close();
         return res;
     }
+
+    private List<ImageDBInfo> getDirUnPreserveImageInfo(int dirInfoID){
+        Cursor c = database.query(
+                IMAGE_INFO_TABLE_NAME,
+                ImageInfoProjection,
+                IMAGE_INFO_COLUMN_DIR_INFO_ID + " = ? and " + IMAGE_INFO_COLUMN_PRESERVE + " = ? ",
+                new String[] { Integer.toString(dirInfoID), "0"},
+                null,   // don't group the rows
+                null,   // don't filter by row groups
+                null    // The sort order
+        );
+        if(c.getCount() == 0){
+            c.close();
+            return null;
+        }
+        List<ImageDBInfo> res = Lists.newArrayList();
+        while(c.moveToNext()) {
+            ImageDBInfo imageInfo = new ImageDBInfo();
+            imageInfo.id = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_ID));
+            imageInfo.dirInfoID = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_DIR_INFO_ID));
+            imageInfo.filePath = c.getString(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_PATH));
+            imageInfo.fileSize = c.getLong(c.getColumnIndex(IMAGE_INFO_COLUMN_FILE_SIZE));
+            imageInfo.downloaded = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_DOWNLOADED));
+            imageInfo.preserve = c.getInt(c.getColumnIndex(IMAGE_INFO_COLUMN_PRESERVE));
+            res.add(imageInfo);
+        }
+        c.close();
+        return res;
+    }
+
+    public void setDirImagePreserve(int dirInfoID, boolean preserve){
+        if(dirInfoID < 0){
+            return;
+        }
+        ContentValues value = new ContentValues();
+        value.put(IMAGE_INFO_COLUMN_PRESERVE, preserve?1:0);
+        database.update(IMAGE_INFO_TABLE_NAME, value, IMAGE_INFO_COLUMN_DIR_INFO_ID + " = ? ", new String[]{Integer.toString(dirInfoID)});
+    }
+
+//    public void setImagePreserve(int dirInfoID, String filePath, boolean preserve){
+//        if(dirInfoID < 0){
+//            return;
+//        }
+//        ContentValues value = new ContentValues();
+//        value.put(IMAGE_INFO_COLUMN_PRESERVE, preserve?1:0);
+//        database.update(IMAGE_INFO_TABLE_NAME, value, IMAGE_INFO_COLUMN_DIR_INFO_ID + " = ? and " + IMAGE_INFO_COLUMN_FILE_PATH + " = ?", new String[]{Integer.toString(dirInfoID), filePath});
+//    }
 
 //    private void addImage(String accountSignature, String repoID, String repoName, String dirID, String dirPath,  String filePath, long fileSize) {
 //        addDirInfo(accountSignature, repoID, repoName, dirID, dirPath);
@@ -355,8 +421,14 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
             values.put(IMAGE_INFO_COLUMN_DIR_INFO_ID, dirInfoID);
             values.put(IMAGE_INFO_COLUMN_FILE_PATH, filePath);
             values.put(IMAGE_INFO_COLUMN_FILE_SIZE, fileSize);
+            values.put(IMAGE_INFO_COLUMN_PRESERVE, 1);
             database.insert(IMAGE_INFO_TABLE_NAME, null, values);
             imageInfo = getImageInfo(dirInfoID, filePath);
+        }else if(imageInfo.preserve == 0){
+            ContentValues values = new ContentValues();
+            values.put(IMAGE_INFO_COLUMN_FILE_SIZE, fileSize);
+            values.put(IMAGE_INFO_COLUMN_PRESERVE, 1);
+            database.update(IMAGE_INFO_TABLE_NAME, values, IMAGE_INFO_COLUMN_ID + " = ?", new String[]{Integer.toString(imageInfo.id)});
         }
         if(imageInfo == null){
             return -1;
@@ -420,6 +492,7 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         }
         c.close();
     }
+
 
     public void setImageDownloadState(String accountSignature, String repoID, String dirID, String filePath, boolean downloaded){
         int dirInfoID = getDirInfoID(accountSignature, repoID, dirID);
@@ -633,6 +706,7 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
                 new String[]{Integer.toString(widgetID), sb.toString()});
     }
 
+
     public void deleteUnusedDirs(){
         Cursor c = database.rawQuery("select distinct " + WIDGET_IMAGE_COLUMN_DIR_INFO_ID + " from " + WIDGET_IMAGE_TABLE_NAME + ";", null);
         List<Integer> usedDirInfoIDs = Lists.newArrayList();
@@ -641,6 +715,11 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         }
         c.close();
         deleteUnusedDirs(usedDirInfoIDs);
+    }
+
+
+    private void deleteAllDirs(){
+        deleteUnusedDirs(null);
     }
 
     public int addWidgetImage(int widgetID, int dirInfoID, int imageID){
@@ -761,4 +840,29 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
 //        database.delete(WIDGET_IMAGE_TABLE_NAME, WIDGET_IMAGE_COLUMN_ACCESS_COUNT + " > ?", new String[]{Integer.toString(maxAccessTimes)});
     }
 
+    public void deleteDirUnPreserveImage(int dirInfoID){
+        List<ImageDBInfo> images = getDirUnPreserveImageInfo(dirInfoID);
+        if(images != null && !images.isEmpty()){
+            StringBuilder ids = new StringBuilder();
+            int i = 0;
+            for(ImageDBInfo image : images){
+                if(image == null){
+                    continue;
+                }
+                if(image.preserve == 0) {
+                    if(i != 0){
+                        ids.append(",");
+                    }
+                    ids.append(image.id);
+                    ++i;
+                    if(image.downloaded > 0) {
+                        File file = new File(image.filePath);
+                        file.delete();
+                    }
+                }
+            }
+            database.delete(IMAGE_INFO_TABLE_NAME, IMAGE_INFO_COLUMN_ID + " IN (?) ", new String[]{ids.toString()});
+            database.delete(WIDGET_IMAGE_TABLE_NAME, WIDGET_IMAGE_COLUMN_IMAGE_ID + " IN (?)", new String[]{ids.toString()});
+        }
+    }
 }

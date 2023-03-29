@@ -22,7 +22,7 @@ public class BootAutostart extends BroadcastReceiver {
      */
     public void onReceive(Context context, Intent intent) {
 
-        Utils.startCameraSyncJob(context);
+        Utils.startUploadSyncJob(context);
     }
 
 

@@ -35,8 +35,8 @@ public class UploadTaskManager extends TransferManager implements UploadStateLis
         return task.getTaskID();
     }
 
-    public List<UploadTaskInfo> getNoneCameraUploadTaskInfos() {
-        List<UploadTaskInfo> noneCameraUploadTaskInfos = Lists.newArrayList();
+    public List<UploadTaskInfo> getNoneUploadSyncTaskInfos() {
+        List<UploadTaskInfo> noneUploadSyncTaskInfos = Lists.newArrayList();
         List<UploadTaskInfo> uploadTaskInfos = (List<UploadTaskInfo>) getAllTaskInfoList();
         for (UploadTaskInfo uploadTaskInfo : uploadTaskInfos) {
             // use isCopyToLocal as a flag to mark a camera photo upload task if false
@@ -44,10 +44,10 @@ public class UploadTaskManager extends TransferManager implements UploadStateLis
             if (!uploadTaskInfo.isCopyToLocal) {
                 continue;
             }
-            noneCameraUploadTaskInfos.add(uploadTaskInfo);
+            noneUploadSyncTaskInfos.add(uploadTaskInfo);
         }
 
-        return noneCameraUploadTaskInfos;
+        return noneUploadSyncTaskInfos;
     }
 
     public void retry(int taskID) {

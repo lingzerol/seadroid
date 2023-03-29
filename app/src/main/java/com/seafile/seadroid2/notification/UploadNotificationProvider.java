@@ -40,7 +40,7 @@ public class UploadNotificationProvider extends BaseNotificationProvider {
             progressStatus = SeadroidApplication.getAppContext().getString(R.string.notification_upload_completed);
         else if (getState().equals(NotificationState.NOTIFICATION_STATE_PROGRESS)) {
             int uploadingCount = 0;
-            List<UploadTaskInfo> infos = txService.getNoneCameraUploadTaskInfos();
+            List<UploadTaskInfo> infos = txService.getNoneUploadSyncTaskInfos();
             for (UploadTaskInfo info : infos) {
                 if (info.state.equals(TaskState.INIT)
                         || info.state.equals(TaskState.TRANSFERRING))
@@ -89,7 +89,7 @@ public class UploadNotificationProvider extends BaseNotificationProvider {
         if (txService == null)
             return 0;
 
-        List<UploadTaskInfo> infos = txService.getNoneCameraUploadTaskInfos();
+        List<UploadTaskInfo> infos = txService.getNoneUploadSyncTaskInfos();
         for (UploadTaskInfo info : infos) {
             if (info == null)
                 continue;
@@ -108,7 +108,7 @@ public class UploadNotificationProvider extends BaseNotificationProvider {
         if (txService == null)
             return NotificationState.NOTIFICATION_STATE_COMPLETED;
 
-        List<UploadTaskInfo> infos = txService.getNoneCameraUploadTaskInfos();
+        List<UploadTaskInfo> infos = txService.getNoneUploadSyncTaskInfos();
 
         int progressCount = 0;
         int errorCount = 0;

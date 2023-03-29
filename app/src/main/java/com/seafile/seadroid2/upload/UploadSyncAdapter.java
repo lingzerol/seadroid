@@ -247,8 +247,8 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
             syncResult.stats.numIoExceptions++;
             if(isCurrnetAccount) {
                 SeadroidApplication.getInstance().setScanUploadStatus(SyncStatus.NETWORK_UNAVAILABLE);
+                EventBus.getDefault().post(new SyncEvent("noNetwork"));
             }
-            EventBus.getDefault().post(new SyncEvent("noNetwork"));
             return;
         }
 
@@ -308,6 +308,9 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
 
                 // Log.d(DEBUG_TAG, "Cancelling remaining pending tasks (if any)");
                 txService.cancelUploadTasksByIds(tasksInProgress);
+                txService.removeUploadTasksByIds(tasksInProgress);
+
+                clearTasksInProgress();
 
                 // Log.d(DEBUG_TAG, "disconnecting from TransferService");
                 getContext().unbindService(mConnection);
@@ -339,17 +342,13 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
             if (info == null) {
                 continue;
             }
-            if(info.err == null || info.state == TaskState.FAILED || info.state == TaskState.CANCELLED){
-                txService.removeUploadTask(info.taskID);
-                continue;
-            }
-            if (info.state == TaskState.FINISHED) {
+            if (info.err == null && info.state == TaskState.FINISHED) {
                 File file = new File(info.localFilePath);
                 sync.markAsUploaded(file);
                 syncResult.stats.numInserts++;
                 txService.removeUploadTask(info.taskID);
-            } else {
-                continue;
+            } else if(info.err != null || info.state != TaskState.INIT && info.state != TaskState.TRANSFERRING){
+                txService.removeUploadTask(info.taskID);
             }
         }
     }

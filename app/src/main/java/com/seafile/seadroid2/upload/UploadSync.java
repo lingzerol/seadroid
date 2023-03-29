@@ -107,6 +107,8 @@ public abstract class UploadSync {
                     // Log.i(DEBUG_TAG, "sync aborted because of IO or server-side error.", e);
                     break;
             }
+            Log.e(DEBUG_TAG, "sync aborted because an seafile error", e);
+            Utils.utilsLogInfo(true, "sync aborted because an seafile error: " + e.getMessage());
         } catch (Exception e) {
             Log.e(DEBUG_TAG, "sync aborted because an unknown error", e);
             Utils.utilsLogInfo(true, "sync aborted because an unknown error: " + e.getMessage());

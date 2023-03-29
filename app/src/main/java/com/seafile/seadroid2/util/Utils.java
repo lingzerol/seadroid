@@ -15,8 +15,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
-import android.net.NetworkInfo.DetailedState;
 import android.net.Uri;
 import android.net.http.SslCertificate;
 import android.os.Build;
@@ -907,7 +905,7 @@ public class Utils {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    public static void startCameraSyncJob(Context context) {
+    public static void startUploadSyncJob(Context context) {
         JobScheduler mJobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         JobInfo.Builder builder = new JobInfo.Builder(JOB_ID, new ComponentName(context.getPackageName(),
                 MediaSchedulerService.class.getName()));

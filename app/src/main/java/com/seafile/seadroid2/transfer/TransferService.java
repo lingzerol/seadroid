@@ -50,7 +50,7 @@ public class TransferService extends Service {
     }
 
     public boolean isTransferring() {
-        List<UploadTaskInfo> uInfos = getNoneCameraUploadTaskInfos();
+        List<UploadTaskInfo> uInfos = getNoneUploadSyncTaskInfos();
         for (UploadTaskInfo info : uInfos) {
             if (info.state.equals(TaskState.INIT)
                     || info.state.equals(TaskState.TRANSFERRING))
@@ -139,8 +139,8 @@ public class TransferService extends Service {
         return (List<UploadTaskInfo>) uploadTaskManager.getAllTaskInfoList();
     }
 
-    public List<UploadTaskInfo> getNoneCameraUploadTaskInfos() {
-        return uploadTaskManager.getNoneCameraUploadTaskInfos();
+    public List<UploadTaskInfo> getNoneUploadSyncTaskInfos() {
+        return uploadTaskManager.getNoneUploadSyncTaskInfos();
     }
 
     public void removeAllUploadTasksByState(TaskState taskState) {

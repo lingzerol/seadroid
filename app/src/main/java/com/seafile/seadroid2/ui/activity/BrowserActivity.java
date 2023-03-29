@@ -59,7 +59,6 @@ import com.seafile.seadroid2.data.ServerInfo;
 import com.seafile.seadroid2.data.StorageManager;
 import com.seafile.seadroid2.fileschooser.MultiFileChooserActivity;
 import com.seafile.seadroid2.loopimages.LoopImagesWidget;
-import com.seafile.seadroid2.loopimages.LoopImagesWidgetConfigureActivity;
 import com.seafile.seadroid2.loopimages.LoopImagesWidgetService;
 import com.seafile.seadroid2.monitor.FileMonitorService;
 import com.seafile.seadroid2.notification.DownloadNotificationProvider;
@@ -398,7 +397,7 @@ public class BrowserActivity extends BaseActivity
         requestServerInfo();
 
         requestReadExternalStoragePermission();
-        Utils.startCameraSyncJob(this);
+        Utils.startUploadSyncJob(this);
         syncCloud();
         startLoopImagesWidget();
     }

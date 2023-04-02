@@ -1,55 +1,26 @@
 package com.seafile.seadroid2.upload.album;
 
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.AbstractThreadedSyncAdapter;
-import android.content.ComponentName;
-import android.content.ContentProviderClient;
-import android.content.ContentResolver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SyncResult;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.IBinder;
 import android.provider.MediaStore;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.common.collect.Lists;
-import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SeadroidApplication;
 import com.seafile.seadroid2.SeafException;
 import com.seafile.seadroid2.SettingsManager;
-import com.seafile.seadroid2.account.Account;
-import com.seafile.seadroid2.account.AccountManager;
-import com.seafile.seadroid2.data.SyncEvent;
 import com.seafile.seadroid2.data.DataManager;
 import com.seafile.seadroid2.data.DirentCache;
 import com.seafile.seadroid2.data.SeafDirent;
-import com.seafile.seadroid2.data.SeafRepo;
 import com.seafile.seadroid2.data.StorageManager;
-import com.seafile.seadroid2.transfer.TaskState;
-import com.seafile.seadroid2.transfer.TransferService;
-import com.seafile.seadroid2.transfer.UploadTaskInfo;
-import com.seafile.seadroid2.ui.CustomNotificationBuilder;
-import com.seafile.seadroid2.ui.activity.AccountsActivity;
-import com.seafile.seadroid2.ui.activity.SettingsActivity;
 import com.seafile.seadroid2.upload.UploadManager;
 import com.seafile.seadroid2.upload.UploadSync;
 import com.seafile.seadroid2.upload.UploadSyncAdapter;
-import com.seafile.seadroid2.util.SyncStatus;
 import com.seafile.seadroid2.util.Utils;
-
-import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -64,8 +35,8 @@ import java.util.Map;
  * It is not called directly, but managed by the Android Sync Manager instead.
  */
 public class AlbumSync extends UploadSync {
-    private static final String DEBUG_TAG = "UploadSync";
-    private static final String CACHE_NAME = "CameraSync";
+    private static final String DEBUG_TAG = "AlbumUploadSync";
+    private static final String CACHE_NAME = "AlbumSync";
     private final String BASE_DIR = super.BASE_DIR + "/Album";
 
     private LinkedList<String> leftBuckets = null;
@@ -89,7 +60,7 @@ public class AlbumSync extends UploadSync {
         if((leftBuckets == null || leftBuckets.size() == 0) && previous == null){
             if(synNum > 30) {
                 Utils.utilsLogInfo(true, "========Clear photo cache...");
-                dbHelper.cleanPhotoCache();
+                dbHelper.cleanCache();
                 synNum = 0;
             }else {
                 ++synNum;
@@ -203,6 +174,7 @@ public class AlbumSync extends UploadSync {
                 break;
             }
         }
+        Utils.utilsLogInfo(true, "========End uploading buckets...");
     }
 
     private MediaCursor iterateCursor(SyncResult syncResult, DataManager dataManager, MediaCursor cursor) throws SeafException, InterruptedException{
@@ -216,7 +188,8 @@ public class AlbumSync extends UploadSync {
 
         Utils.utilsLogInfo(true, "========Found ["+ fileIter+"/"+fileNum+"] images in bucket "+bucketName+"========");
         try {
-            DirentCache cache = getCache(getRepoID(), getDirectoryPath(), bucketName, dataManager);
+            String cacheName = CACHE_NAME + repoID + "-" + bucketName;
+            DirentCache cache = getCache(cacheName, getRepoID(), Utils.pathJoin(getDirectoryPath(), bucketName), dataManager);
             if(cache != null) {
                 int n = cache.getCount();
                 boolean done = false;
@@ -225,7 +198,7 @@ public class AlbumSync extends UploadSync {
                         break;
                     }
                     SeafDirent item = cache.get(i);
-                    while (cursor.getFileName().compareTo(item.name) <= 0) {
+                    while (!isCancelled() && cursor.getFileName().compareTo(item.name) <= 0) {
                         if (cursor.getFileName().compareTo(item.name) < 0 || item.size < cursor.getFileSize() && item.mtime < cursor.getFileModified()) {
                             File file = cursor.getFile();
                             if (file != null && file.exists() && dbHelper.isUploaded(getAccountSignature(), file.getPath(), file.lastModified())) {
@@ -265,9 +238,14 @@ public class AlbumSync extends UploadSync {
                     cache.delete();
                 }
             }
-            while (!cursor.isAfterLast() && !isCancelled()) {
+            while (!isCancelled() && !cursor.isAfterLast()) {
                 File file = cursor.getFile();
-                adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), Utils.pathJoin(getDirectoryPath(), bucketName));
+                if(file == null || !file.exists()){
+                    Log.d(DEBUG_TAG, "Skipping media " + file + " because it doesn't exist");
+                    syncResult.stats.numSkippedEntries++;
+                }else if (!dbHelper.isUploaded(getAccountSignature(), file.getPath(), file.lastModified())) {
+                    adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), Utils.pathJoin(getDirectoryPath(), bucketName));
+                }
                 ++fileIter;
                 if(!cursor.moveToNext()){
                     break;
@@ -516,32 +494,6 @@ public class AlbumSync extends UploadSync {
                 videoCursor.close();
             }
         }
-    }
-
-    private DirentCache getCache(String repoID, String dataPath, String bucketName, DataManager dataManager) throws IOException, InterruptedException, SeafException{
-        String name = CACHE_NAME+repoID+"-"+bucketName;
-        String serverPath = Utils.pathJoin(dataPath, bucketName);
-//        if(DirentCache.cacheFileExists(name)){
-//            return new DirentCache(name);
-//        }
-        Utils.utilsLogInfo(true, "=======savingRepo===");
-        List<SeafDirent> seafDirents = dataManager.getCachedDirents(repoID, serverPath);
-        int timeOut = 10000; // wait up to a second
-        while (seafDirents == null && timeOut > 0) {
-            // Log.d(DEBUG_TAG, "waiting for transfer service");
-            Thread.sleep(100);
-            seafDirents = dataManager.getDirentsFromServer(repoID, serverPath);
-            timeOut -= 100;
-        }
-        if (seafDirents == null) {
-            return null;
-        }
-        return new DirentCache(name, seafDirents, new Comparator<SeafDirent>() {
-            @Override
-            public int compare(SeafDirent o1, SeafDirent o2) {
-                return o1.name.compareTo(o2.name);
-            }
-        });
     }
 }
 

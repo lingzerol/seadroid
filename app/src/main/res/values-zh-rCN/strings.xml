@@ -548,4 +548,8 @@
     <string name="settings_album_upload_stopped">相册上传已停止</string>
   <string name="settings_album_upload_started">相册上传已开启</string>
   <string name="settings_album_upload_turn_on">开启相册上传</string>
+  <string name="settings_calllog_upload_stopped">通话记录上传已停止</string>
+  <string name="settings_calllog_upload_started">通话记录上传已开始</string>
+  <string name="settings_calllog_upload_turn_on">通话记录上传</string>
+    <string name="permission_read_call_log_rationale">在上传CallLog之前，请允许读取通讯记录的权限</string>
 </resources>

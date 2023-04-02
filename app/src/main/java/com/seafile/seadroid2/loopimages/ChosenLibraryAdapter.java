@@ -120,9 +120,11 @@ public class ChosenLibraryAdapter extends BaseAdapter {
             viewHolder = (ChosenLibraryAdapter.Viewholder) convertView.getTag();
         }
         Account account = LoopImagesWidgetConfigureActivity.getAccount(chosenLibraryFragment.getContext(), dir.getAccountSignature());
-        viewHolder.icon.setImageResource(getDataManager(account).getCachedRepoByID(dir.getRepoId()).getIcon());
+        if(account != null){
+            viewHolder.icon.setImageResource(getDataManager(account).getCachedRepoByID(dir.getRepoId()).getIcon());
+            viewHolder.subtitle.setText(account.getDisplayName());
+        }
         viewHolder.title.setText(dir.getRepoName() + ":" + dir.getDirPath());
-        viewHolder.subtitle.setText(account.getDisplayName());
         viewHolder.action.setTag(position);
         viewHolder.action.setOnClickListener(new DeleteItemOnClickListener());
 

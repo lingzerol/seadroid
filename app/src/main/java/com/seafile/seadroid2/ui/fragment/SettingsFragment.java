@@ -95,6 +95,9 @@ public class SettingsFragment extends CustomPreferenceFragment {
     private Preference aLocalDirectoriesPref;
     private CheckBoxPreference aVideoAllowed;
 
+    // CallLog upload
+    private CheckBoxPreference callUploadSwitch;
+
     // privacy
     private PreferenceCategory cPrivacyCategory;
     private Preference clientEncPref;
@@ -532,6 +535,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
         });
 
         initAlbumUploadSettings();
+        initCallLogUploadSettings();
 
         refreshCloudUploadView();
     }
@@ -610,6 +614,26 @@ public class SettingsFragment extends CustomPreferenceFragment {
         });
     }
 
+    private void initCallLogUploadSettings(){
+        callUploadSwitch = (CheckBoxPreference) findPreference(SettingsManager.CALLLOG_UPLOAD_SWITCH_KEY);
+        callUploadSwitch.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isChecked = (Boolean) newValue;
+                    if (!isChecked) {
+                        UploadManager.disableAccountUploadSync(accountMgr.getCurrentAccount(), UploadManager.CALLLOG_SYNC);
+                    }
+                    else {
+                        UploadManager.enableAccountUploadSync(accountMgr.getCurrentAccount(), UploadManager.CALLLOG_SYNC);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
     private void clearPasswordSilently() {
         ConcurrentAsyncTask.submit(new Runnable() {
             @Override
@@ -669,6 +693,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
         }
 
         refreshAlbumUploadView();
+        refreshCallLogUploadView();
     }
 
     private void refreshAlbumUploadView(){
@@ -713,6 +738,16 @@ public class SettingsFragment extends CustomPreferenceFragment {
             aLocalDirectoriesPref.setSummary(TextUtils.join(", ", bucketNames));
             aUploadAdvancedCategory.addPreference(aLocalDirectoriesPref);
         }
+    }
+
+    private void refreshCallLogUploadView() {
+        Account camAccount = accountMgr.getCurrentAccount();
+        if(camAccount == null || !UploadManager.isEnableCloudUploadSync(camAccount, UploadManager.CALLLOG_SYNC)){
+            callUploadSwitch.setChecked(false);
+            return;
+        }
+        mActivity.requestReadCallLogPermission();
+        callUploadSwitch.setChecked(true);
     }
 
     private void clearCache() {

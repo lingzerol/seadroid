@@ -611,6 +611,7 @@ public class BrowserActivity extends BaseActivity
                     // permission denied
                 }
             }
+            break;
         }
     }
 

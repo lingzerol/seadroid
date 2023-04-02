@@ -97,6 +97,7 @@ public final class SettingsManager {
     public static final String ALBUM_UPLOAD_CUSTOM_BUCKETS_KEY = "album_upload_buckets_switch_key";
     public static final String ALBUM_UPLOAD_BUCKETS_KEY = "album_upload_buckets_key";
     public static final String CLOUD_UPLOAD_STATE = "cloud_upload_state";
+    public static final String CALLLOG_UPLOAD_SWITCH_KEY = "calllog_upload_switch_key";
 
     //contacts
     public static final String CONTACTS_UPLOAD_CATEGORY_KEY = "category_contacts_upload_key";

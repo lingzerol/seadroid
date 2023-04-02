@@ -12,9 +12,11 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
 
+import com.google.common.collect.Lists;
 import com.seafile.seadroid2.R;
 import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
+import com.seafile.seadroid2.data.DataManager;
 import com.seafile.seadroid2.ui.activity.SeafilePathChooserActivity;
 
 import java.util.ArrayList;
@@ -82,8 +84,31 @@ public class ChosenLibraryFragment extends Fragment {
         chosenlibraryListView.setAdapter(chosenlibraryListAdapter);
 
         List<DirInfo> dirInfos = mActivity.getDirInfo(mActivity.getAppWidgetId());
+        List<DirInfo> checkedDirInfos = Lists.newArrayList();
+        for(DirInfo dirInfo: dirInfos){
+            if(dirInfo == null){
+                continue;
+            }
+            Account account = LoopImagesWidgetConfigureActivity.getAccount(getContext(), dirInfo.getAccountSignature());
+            if(account == null){
+                continue;
+            }
+            DataManager dataManager = new DataManager(account);
+            if(dataManager.getCachedRepoByID(dirInfo.getRepoId()) == null){
+                continue;
+            }
+            checkedDirInfos.add(dirInfo);
+        }
 
-        chosenlibraryListAdapter.setDirs(dirInfos);
+        if(checkedDirInfos.size() != dirInfos.size()){
+            List<String> dirInfoStrs = new ArrayList<String>();
+            for (DirInfo dirInfo : checkedDirInfos) {
+                dirInfoStrs.add(dirInfo.toString());
+            }
+            SettingsManager.instance().setLoopImagesWidgetDirInfo(mActivity.getAppWidgetId(), dirInfoStrs);
+        }
+
+        chosenlibraryListAdapter.setDirs(checkedDirInfos);
 
         if (chosenlibraryListAdapter.getCount() > 0)
             mDoneBtn.setVisibility(View.VISIBLE);

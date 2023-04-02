@@ -258,7 +258,11 @@ public class LoopImagesWidgetService extends Service {
                 imageInfo.deleteStorage();
             }
         }
-        int taskID = txService.addDownloadTask(LoopImagesWidgetConfigureActivity.getAccount(getApplicationContext(), imageInfo.getDirInfo().getAccountSignature()),
+        Account account = LoopImagesWidgetConfigureActivity.getAccount(getApplicationContext(), imageInfo.getDirInfo().getAccountSignature());
+        if(account == null){
+            return;
+        }
+        int taskID = txService.addDownloadTask(account,
                 imageInfo.getDirInfo().getRepoName(),
                 imageInfo.getDirInfo().getRepoId(),
                 imageInfo.getRemoteFilePath(),
@@ -444,10 +448,16 @@ public class LoopImagesWidgetService extends Service {
                 List<DirInfo> dirInfos = Lists.newArrayList();
                 for (DirInfo info : LoopImagesWidgetConfigureActivity.getDirInfo(appWidgetId)) {
                     if (info == null) {
+                        haveUpdated = true;
+                        continue;
+                    }
+                    DataManager dataManager = getDataManager(info.getAccountSignature());
+                    if(dataManager == null){
+                        haveUpdated = true;
                         continue;
                     }
                     int dirInfoID = -1;
-                    String dirID = getDataManager(info.getAccountSignature()).getDirID(info.getRepoId(), info.getDirPath());
+                    String dirID = dataManager.getDirID(info.getRepoId(), info.getDirPath());
                     if (!dirID.equals(info.getDirId())) {
                         if(!dirInfoSets.contains(info.toString())) {
 //                        synchronized (imageInfosLock) {
@@ -467,7 +477,6 @@ public class LoopImagesWidgetService extends Service {
                                 synchronized (imageInfosLock){
                                     dbHelper.setDirImagePreserve(dirInfoID, false);
                                 }
-                                DataManager dataManager = getDataManager(info.getAccountSignature());
                                 if(dataManager != null) {
                                     List<SeafDirent> seafDirents = dataManager.getCachedDirents(info.getRepoId(), info.getDirPath());
                                     for (SeafDirent dirent : seafDirents) {
@@ -497,7 +506,6 @@ public class LoopImagesWidgetService extends Service {
                         dirInfoID = dbHelper.getDirInfoID(info.getAccountSignature(), info.getRepoId(), info.getDirId());
                     }
                     if (dirInfoID < 0) {
-                        DataManager dataManager = getDataManager(info.getAccountSignature());
                         if(dataManager != null) {
                             List<SeafDirent> seafDirents = dataManager.getCachedDirents(info.getRepoId(), info.getDirPath());
                             synchronized (imageInfosLock) {
@@ -517,7 +525,6 @@ public class LoopImagesWidgetService extends Service {
                         }
                     }else {
                         if(haveUpdated){
-                            DataManager dataManager = getDataManager(info.getAccountSignature());
                             if(dataManager != null) {
                                 List<SeafDirent> seafDirents = dataManager.getCachedDirents(info.getRepoId(), info.getDirPath());
                                 synchronized (imageInfosLock) {
@@ -535,11 +542,13 @@ public class LoopImagesWidgetService extends Service {
                                     dbHelper.deleteDirUnPreserveImage(dirInfoID);
                                 }
                             }
+                        }else{
+                            synchronized (imageInfosLock) {
+                                dbHelper.addWidgetDir(appWidgetId, dirInfoID);
+                            }
                         }
                         usedDirIds.add(dirInfoID);
-                        synchronized (imageInfosLock) {
-                            dbHelper.addWidgetDir(appWidgetId, dirInfoID);
-                        }
+
                     }
                     dirInfos.add(info);
                 }

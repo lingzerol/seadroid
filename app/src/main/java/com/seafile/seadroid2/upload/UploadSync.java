@@ -9,6 +9,8 @@ import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.data.DataManager;
+import com.seafile.seadroid2.data.DirentCache;
+import com.seafile.seadroid2.data.SeafDirent;
 import com.seafile.seadroid2.data.SyncEvent;
 import com.seafile.seadroid2.util.SyncStatus;
 import com.seafile.seadroid2.util.Utils;
@@ -16,7 +18,9 @@ import com.seafile.seadroid2.util.Utils;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.Comparator;
 import java.util.List;
 
 public abstract class UploadSync {
@@ -153,5 +157,31 @@ public abstract class UploadSync {
 
     public int getSyncType(){
         return syncType;
+    }
+
+    protected DirentCache getCache(String name, String repoID, String dataPath, DataManager dataManager, Comparator<SeafDirent> comparator) throws IOException, InterruptedException, SeafException{
+        Utils.utilsLogInfo(true, "=======saving " + name + " cache=========");
+        List<SeafDirent> seafDirents = dataManager.getCachedDirents(repoID, dataPath);
+        int timeOut = 10000; // wait up to a second
+        while (seafDirents == null && timeOut > 0) {
+            // Log.d(DEBUG_TAG, "waiting for transfer service");
+            Thread.sleep(100);
+            seafDirents = dataManager.getDirentsFromServer(repoID, dataPath);
+            timeOut -= 100;
+        }
+        if (seafDirents == null) {
+            return null;
+        }
+        return new DirentCache(name, seafDirents, comparator);
+    }
+
+    protected DirentCache getCache(String name, String repoID, String dataPath, DataManager dataManager) throws IOException, InterruptedException, SeafException{
+        Comparator<SeafDirent> comparator = new Comparator<SeafDirent>() {
+            @Override
+            public int compare(SeafDirent o1, SeafDirent o2) {
+                return o1.name.compareTo(o2.name);
+            }
+        };
+        return getCache(name, repoID, dataPath, dataManager, comparator);
     }
 }

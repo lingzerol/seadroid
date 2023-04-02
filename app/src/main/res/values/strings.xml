@@ -583,4 +583,8 @@
     <string name="settings_album_upload_started">Album upload started</string>
     <string name="settings_album_upload_stopped">Album upload stopped</string>
     <string name="settings_album_upload_turn_on">Turn On Album Upload</string>
+    <string name="settings_calllog_upload_stopped">CallLog upload stopped</string>
+    <string name="settings_calllog_upload_started">CallLog upload started</string>
+    <string name="settings_calllog_upload_turn_on">CallLog Upload</string>
+    <string name="permission_read_call_log_rationale">To upload call log, allow read call log permission to process them.</string>
 </resources>

@@ -6,16 +6,11 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.google.common.collect.Lists;
 import com.seafile.seadroid2.SeadroidApplication;
-import com.seafile.seadroid2.account.Account;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class UploadDBHelper extends SQLiteOpenHelper {
     private static final String DEBUG_TAG = "UploadDBHelper";
@@ -187,6 +182,26 @@ public class UploadDBHelper extends SQLiteOpenHelper {
         return count > 0;
     }
 
+    public boolean isUploaded(String accountSignature, String path) {
+        int accountID = getAccountID(accountSignature);
+        if(accountID < 0){
+            return false;
+        }
+        Cursor c = database.query(
+                getCacheTableName(),
+                CacheProjection,
+                CACHE_COLUMN_ACCOUNT_SIGNATURE_ID + " = ? and " + CACHE_COLUMN_FILE + " = ? ",
+                new String[] { Integer.toString(accountID), path},
+                null,   // don't group the rows
+                null,   // don't filter by row groups
+                null    // The sort order
+        );
+
+        int count = c.getCount();
+        c.close();
+        return count > 0;
+    }
+
     public void markAsUploaded(String accountSignature, File file) {
         String path = file.getAbsolutePath();
         long modified = file.lastModified();
@@ -207,7 +222,7 @@ public class UploadDBHelper extends SQLiteOpenHelper {
         database.insert(getCacheTableName(), null, values);
     }
 
-    public void cleanPhotoCache() {
+    public void cleanCache() {
         database.delete(getCacheTableName(), null, null);
     }
 

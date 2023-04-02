@@ -33,6 +33,7 @@ import com.seafile.seadroid2.transfer.UploadTaskInfo;
 import com.seafile.seadroid2.ui.CustomNotificationBuilder;
 import com.seafile.seadroid2.ui.activity.AccountsActivity;
 import com.seafile.seadroid2.upload.album.AlbumSync;
+import com.seafile.seadroid2.upload.callLog.CallLogSync;
 import com.seafile.seadroid2.util.SyncStatus;
 import com.seafile.seadroid2.util.Utils;
 
@@ -115,6 +116,8 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
     public UploadSync getUploadSync(int synType){
         if(synType == UploadManager.ALBUM_SYNC){
             return new AlbumSync(this);
+        }else if(synType == UploadManager.CALLLOG_SYNC){
+            return new CallLogSync(this);
         }
         return null;
     }
@@ -285,7 +288,7 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
             }
 
             if(syncs != null && !syncs.isEmpty()) {
-                while (lastSyncIndex < syncs.size()) {
+                while (!isCancelled() && lastSyncIndex < syncs.size()) {
                     if(syncs.get(lastSyncIndex) != null && UploadManager.isEnableCloudUploadSync(seafileAccount, syncs.get(lastSyncIndex).getSyncType())){
                         syncs.get(lastSyncIndex).performSync(seafileAccount, dataManager, syncResult);
                     }
@@ -304,14 +307,8 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
             Utils.utilsLogInfo(true, "sync aborted because an unknown error: " + e.getMessage());
             syncResult.stats.numParseExceptions++;
         } finally {
+            clearTasksInProgress();
             if (txService != null) {
-
-                // Log.d(DEBUG_TAG, "Cancelling remaining pending tasks (if any)");
-                txService.cancelUploadTasksByIds(tasksInProgress);
-                txService.removeUploadTasksByIds(tasksInProgress);
-
-                clearTasksInProgress();
-
                 // Log.d(DEBUG_TAG, "disconnecting from TransferService");
                 getContext().unbindService(mConnection);
                 txService = null;
@@ -321,17 +318,20 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
 
     public void waitForUploads() throws InterruptedException {
         // Log.d(DEBUG_TAG, "wait for transfer service to finish our tasks");
-        WAITLOOP: while (!isCancelled()) {
+        while (!isCancelled()) {
             Thread.sleep(100); // wait
-
+            boolean flag = false;
             for (int id: tasksInProgress) {
                 UploadTaskInfo info = txService.getUploadTaskInfo(id);
                 if (info != null && (info.state == TaskState.INIT || info.state == TaskState.TRANSFERRING)) {
                     // there is still at least one task pending
-                    continue  WAITLOOP;
+                    flag = true;
+                    break;
                 }
             }
-            break;
+            if(!flag) {
+                break;
+            }
         }
     }
 
@@ -416,6 +416,10 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     public void clearTasksInProgress(){
+        if (txService != null) {
+            txService.cancelUploadTasksByIds(tasksInProgress);
+            txService.removeUploadTasksByIds(tasksInProgress);
+        }
         tasksInProgress.clear();
     }
 }

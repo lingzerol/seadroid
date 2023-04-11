@@ -12,6 +12,7 @@ import com.seafile.seadroid2.data.DataManager;
 import com.seafile.seadroid2.data.DirentCache;
 import com.seafile.seadroid2.data.SeafDirent;
 import com.seafile.seadroid2.data.SyncEvent;
+import com.seafile.seadroid2.util.SeafileLog;
 import com.seafile.seadroid2.util.SyncStatus;
 import com.seafile.seadroid2.util.Utils;
 
@@ -25,7 +26,7 @@ import java.util.List;
 
 public abstract class UploadSync {
     private static final String DEBUG_TAG = "UploadSync";
-    protected final String BASE_DIR = "Back_Up";
+    protected final String BASE_DIR = SeafileLog.getSystemModel();
 
     protected int syncType;
     protected UploadDBHelper dbHelper = null;

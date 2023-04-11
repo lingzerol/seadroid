@@ -80,8 +80,8 @@ public class CallLogSync extends UploadSync {
                 Log.d(DEBUG_TAG, "Failed to create " + getAccountSignature() + "-" + getRepoName() + ":" + Utils.pathJoin(getDataPath(), BASE_DIR) + " dir");
                 return;
             }
-            String name = CACHE_NAME + "-" + repoID;
-            DirentCache cache = getCache(name, getRepoID(),getDirectoryPath(), dataManager, new Comparator<SeafDirent>() {
+            String cacheName = CACHE_NAME + "-" + repoID;
+            DirentCache cache = getCache(cacheName, getRepoID(),getDirectoryPath(), dataManager, new Comparator<SeafDirent>() {
                 @Override
                 public int compare(SeafDirent o1, SeafDirent o2) {
                     String date1 = o1.name.substring(0, o1.name.lastIndexOf("."));
@@ -110,14 +110,15 @@ public class CallLogSync extends UploadSync {
                     dateStr = dateStr.substring(0, dateStr.lastIndexOf("."));
                     long timestamp = getTimeStamp(dateStr);
                     while (!isCancelled() && cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE)) <= timestamp) {
+                        String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
                         String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
                         long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
                         int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
                         int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
                         Log.d(DEBUG_TAG, "readCallLog: number=" + number + ", date=" + date + ", type=" + type + ", duration=" + duration);
-                        String filePath = Utils.pathJoin(repoFile.getAbsolutePath(), getDateStr(date) + ".json");
+                        String filePath = Utils.pathJoin(repoFile.getAbsolutePath(), getDateStr(date) + "-" + number + ".json");
                         if (date < timestamp && !dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                            File file = generateCallLog(filePath, number, date, type, duration);
+                            File file = generateCallLog(filePath, name, number, date, type, duration);
                             if (file != null && file.exists()) {
                                 callLogs.add(file);
                                 adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
@@ -142,14 +143,15 @@ public class CallLogSync extends UploadSync {
                 }
             }
             while (!isCancelled() && !cursor.isAfterLast()) {
+                String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
                 String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
                 long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
                 int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
                 int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
                 Log.d(DEBUG_TAG, "readCallLog: number=" + number + ", date=" + date + ", type=" + type + ", duration=" + duration);
-                String filePath = Utils.pathJoin(repoFile.getAbsolutePath(), getDateStr(date) + ".json");
+                String filePath = Utils.pathJoin(repoFile.getAbsolutePath(), getDateStr(date) + "(" + number + ").json");
                 if (!dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                    File file = generateCallLog(filePath, number, date, type, duration);
+                    File file = generateCallLog(filePath, name, number, date, type, duration);
                     if (file != null && file.exists()) {
                         callLogs.add(file);
                         adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
@@ -187,7 +189,7 @@ public class CallLogSync extends UploadSync {
     }
 
     private long getTimeStamp(String dateStr){
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH'h'-mm'm'-ss's'-SSS", Locale.getDefault());
         long timestamp = 0;
         try {
             Date date = dateFormat.parse(dateStr);
@@ -202,14 +204,19 @@ public class CallLogSync extends UploadSync {
 
     private String getDateStr(long timestamp){
         Date date = new Date(timestamp);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH'h'-mm'm'-ss's'-SSS", Locale.getDefault());
         return dateFormat.format(date);
     }
 
-    private File generateCallLog(String path, String number, long date, int type, int duration){
+    private File generateCallLog(String path, String name, String number, long date, int type, int duration){
         try {
             StringBuilder sb = new StringBuilder();
             sb.append("{\n");
+            sb.append("\"Name\": ");
+            sb.append("\"");
+            sb.append(name);
+            sb.append("\"");
+            sb.append(", \n");
             sb.append("\"Number\": ");
             sb.append("\"");
             sb.append(number);

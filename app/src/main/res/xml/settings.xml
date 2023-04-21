@@ -129,6 +129,27 @@
                     android:title="@string/settings_calllog_upload_turn_on"
                     >
                 </com.seafile.seadroid2.ui.SwitchPreferenceCompat>
+
+                <PreferenceScreen android:key="file_upload_advanced_feature"
+                    android:title="@string/settings_file_upload_advanced_feature_title"
+                    android:summary="@string/settings_file_upload_advanced_feature_subtitle">
+                    <PreferenceCategory android:key="category_file_upload_advanced_key"
+                        android:title="@string/settings_file_advance_feature_title">
+                        <com.seafile.seadroid2.ui.SwitchPreferenceCompat
+                            android:defaultValue="false"
+                            android:key="file_upload_switch_key"
+                            android:summaryOff="@string/settings_file_upload_stopped"
+                            android:summaryOn="@string/settings_file_upload_started"
+                            android:title="@string/settings_file_upload_turn_on" >
+                        </com.seafile.seadroid2.ui.SwitchPreferenceCompat>
+                        <Preference
+                            android:key="file_upload_directories_key"
+                            android:summary="@string/settings_file_upload_dir_auto_scan"
+                            android:title="@string/settings_file_upload_choose_dir" >
+                        </Preference>
+                    </PreferenceCategory>
+                </PreferenceScreen>
+
             </PreferenceCategory>
         </PreferenceScreen>
         <Preference

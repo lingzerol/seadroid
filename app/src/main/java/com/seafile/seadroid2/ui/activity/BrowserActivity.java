@@ -16,8 +16,11 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.provider.MediaStore;
+import android.provider.Settings;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
@@ -128,7 +131,11 @@ public class BrowserActivity extends BaseActivity
     public static final String CHOOSE_APP_DIALOG_FRAGMENT_TAG = "choose_app_fragment";
     public static final String CHARE_LINK_PASSWORD_FRAGMENT_TAG = "share_link_password_fragment";
     public static final String PICK_FILE_DIALOG_FRAGMENT_TAG = "pick_file_fragment";
+    public static final int REQUEST_ALL_PERMISSIONS = 0;
     public static final int REQUEST_PERMISSIONS_WRITE_EXTERNAL_STORAGE = 1;
+    public static final int REQUEST_PERMISSIONS_READ_CALL_LOG = 2;
+    public static final int REQUEST_PERMISSIONS_READ_EXTERNAL_STORAGE = 3;
+    public static final int REQUEST_MANAGE_EXTERNAL_STORAGE = 10;
 
     public static final String TAG_NEW_REPO_DIALOG_FRAGMENT = "NewRepoDialogFragment";
     public static final String TAG_DELETE_REPO_DIALOG_FRAGMENT = "DeleteRepoDialogFragment";
@@ -396,7 +403,10 @@ public class BrowserActivity extends BaseActivity
 
         requestServerInfo();
 
-        requestReadExternalStoragePermission();
+//        requestWriteExternalStoragePermission();
+//        requestReadExternalStoragePermission();
+//        requestReadCallLogPermission();
+        requestAllPermission();
         Utils.startUploadSyncJob(this);
         syncCloud();
         startLoopImagesWidget();
@@ -565,7 +575,56 @@ public class BrowserActivity extends BaseActivity
      * permission, otherwise it is requested directly.
      *
      */
-    private void requestReadExternalStoragePermission() {
+    private void requestAllPermission(){
+        List<String> permissions = Lists.newArrayList();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.READ_CALL_LOG);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//            if(ActivityCompat.checkSelfPermission(this, Manifest.permission.MANAGE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+//                permissions.add(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
+//            }
+            if(!Environment.isExternalStorageManager()){
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                Uri uri = Uri.fromParts("package", getPackageName(), null);
+                intent.setData(uri);
+                startActivityForResult(intent, REQUEST_MANAGE_EXTERNAL_STORAGE);
+            }
+        }
+        if(!permissions.isEmpty()) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                Snackbar.make(mLayout,
+                                R.string.request_all_permission_rationale,
+                                Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.settings, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                ActivityCompat.requestPermissions(BrowserActivity.this,
+                                        permissions.toArray(new String[permissions.size()]),
+                                        REQUEST_ALL_PERMISSIONS);
+                            }
+                        })
+                        .show();
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                // WRITE_EXTERNAL_STORAGE permission has not been granted yet. Request it directly.
+                ActivityCompat.requestPermissions(this,
+                        permissions.toArray(new String[permissions.size()]),
+                        REQUEST_ALL_PERMISSIONS);
+            }
+        }
+    }
+    private void requestWriteExternalStoragePermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
@@ -595,6 +654,67 @@ public class BrowserActivity extends BaseActivity
         }
     }
 
+    public void requestReadCallLogPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_CALL_LOG)) {
+
+                Snackbar.make(mLayout,
+                                R.string.permission_read_call_log_rationale,
+                                Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.settings, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                ActivityCompat.requestPermissions(BrowserActivity.this,
+                                        new String[]{Manifest.permission.READ_CALL_LOG},
+                                        REQUEST_PERMISSIONS_READ_CALL_LOG);
+                            }
+                        })
+                        .show();
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                // WRITE_EXTERNAL_STORAGE permission has not been granted yet. Request it directly.
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CALL_LOG},
+                        REQUEST_PERMISSIONS_READ_CALL_LOG);
+            }
+        }
+    }
+
+
+    public void requestReadExternalStoragePermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
+
+                Snackbar.make(mLayout,
+                                R.string.permission_read_external_storage_rationale,
+                                Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.settings, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                ActivityCompat.requestPermissions(BrowserActivity.this,
+                                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                                        REQUEST_PERMISSIONS_READ_EXTERNAL_STORAGE);
+                            }
+                        })
+                        .show();
+
+            } else {
+
+                // No explanation needed, we can request the permission.
+
+                // WRITE_EXTERNAL_STORAGE permission has not been granted yet. Request it directly.
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        REQUEST_PERMISSIONS_READ_EXTERNAL_STORAGE);
+            }
+        }
+    }
+
     /**
      * Callback received when a permissions request has been completed.
      */
@@ -602,6 +722,12 @@ public class BrowserActivity extends BaseActivity
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         // Log.i(DEBUG_TAG, "Received response for permission request.");
         switch (requestCode) {
+            case REQUEST_ALL_PERMISSIONS:
+
+            case REQUEST_PERMISSIONS_READ_EXTERNAL_STORAGE:
+
+            case REQUEST_PERMISSIONS_READ_CALL_LOG:
+
             case REQUEST_PERMISSIONS_WRITE_EXTERNAL_STORAGE: {
                 // Check if the only required permission has been granted
                 // If request is cancelled, the result arrays are empty.
@@ -1385,6 +1511,9 @@ public class BrowserActivity extends BaseActivity
                     boolean isOpenWith = data.getBooleanExtra("is_open_with", false);
                     WidgetUtils.showFile(BrowserActivity.this, file, isOpenWith);
                 }
+                break;
+            case REQUEST_MANAGE_EXTERNAL_STORAGE:
+                break;
         default:
              break;
         }

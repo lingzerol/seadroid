@@ -354,7 +354,7 @@
   <string name="settings_cuc_auto_scan">自動的にカメラのアルバムを推測</string>
   <string name="settings_cuc_pick_albums">マイ フォトアルバムを選択しましょう</string>
   <string name="settings_cuc_remote_lib_hint">お好みのアカウントとライブラリーを選択してください。 \nこのオプションは後で設定から変更することができます。</string>
-  <string name="settings_cuc_finish_title">完了</string>
+  <string name="settings_upload_finish_title">完了</string>
   <string name="settings_upload_ready">下で確認した後 Seafile は選択したフォルダーからファイルをアップロードします。 \nこの処理の間、アプリを自由に閉じることができます。</string>
   <string name="settings_upload_swipe_left">左にスワイプすると続行します。</string>
   <string name="settings_upload_click_btn">クリックすると設定ヘルパーを閉じます。</string>

@@ -334,7 +334,7 @@
   <string name="settings_cuc_auto_scan">Fénykép albumok automatikus megkeresése</string>
   <string name="settings_cuc_pick_albums">Fénykép albumok kézi kiválasztása</string>
   <string name="settings_cuc_remote_lib_hint">Válassza ki a preferált fiókot és kötetet. \nEzeket a beállításokat később bármikor megváltoztathatja.</string>
-  <string name="settings_cuc_finish_title">Kész</string>
+  <string name="settings_upload_finish_title">Kész</string>
   <string name="settings_upload_ready">A Seafile most elkezdi feltölteni a kiválasztott könyvtárakból a fájlokat. \nBezárhatja az alkalmazást.</string>
   <string name="settings_upload_swipe_left">Továbblépéshez húzza balra.</string>
   <string name="settings_upload_click_btn">A konfigurációs segéd bezárásához koppintson.</string>

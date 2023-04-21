@@ -30,7 +30,6 @@ public class SettingsActivity extends BaseActivity implements Toolbar.OnMenuItem
     public TransferService txService;
     private SettingsFragment mSettingsFragment;
     public static final int REQUEST_PERMISSIONS_READ_CONTACTS = 2;
-    public static final int REQUEST_PERMISSIONS_READ_CALL_LOG = 3;
     public static String BASE_DIR = "Contacts Backup";
 
     public void onCreate(Bundle savedInstanceState) {
@@ -75,15 +74,17 @@ public class SettingsActivity extends BaseActivity implements Toolbar.OnMenuItem
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         // Log.i(DEBUG_TAG, "Received response for permission request.");
-        switch (requestCode) {
-            case REQUEST_PERMISSIONS_READ_CALL_LOG:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // permission was granted
-                } else {
-                    // permission denied
-                }
-                break;
-        }
+//        switch (requestCode) {
+//            case REQUEST_PERMISSIONS_READ_EXTERNAL_STORAGE:
+//
+//            case REQUEST_PERMISSIONS_READ_CALL_LOG:
+//                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                    // permission was granted
+//                } else {
+//                    // permission denied
+//                }
+//                break;
+//        }
     }
 
     //    public void uploadContacts(String path) {
@@ -163,35 +164,6 @@ public class SettingsActivity extends BaseActivity implements Toolbar.OnMenuItem
         }
     }
 
-    public void requestReadCallLogPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.READ_CALL_LOG)) {
-
-                Snackbar.make(mLayout,
-                                R.string.permission_read_call_log_rationale,
-                                Snackbar.LENGTH_INDEFINITE)
-                        .setAction(R.string.settings, new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
-                                ActivityCompat.requestPermissions(SettingsActivity.this,
-                                        new String[]{Manifest.permission.READ_CALL_LOG},
-                                        REQUEST_PERMISSIONS_READ_CALL_LOG);
-                            }
-                        })
-                        .show();
-
-            } else {
-
-                // No explanation needed, we can request the permission.
-
-                // WRITE_EXTERNAL_STORAGE permission has not been granted yet. Request it directly.
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CALL_LOG},
-                        REQUEST_PERMISSIONS_READ_CALL_LOG);
-            }
-        }
-    }
 
 //    ServiceConnection mConnection = new ServiceConnection() {
 //        @Override

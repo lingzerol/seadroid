@@ -286,7 +286,7 @@
   <string name="settings_upload_upload_to_parent_folder">Upp í Yfirskráasafn</string>
   <string name="settings_cuc_auto_scan">Velja myndasöfn sjálfvirkt</string>
   <string name="settings_cuc_pick_albums">Leyfðu mér að velja upphleðslumyndasöfn</string>
-  <string name="settings_cuc_finish_title">Enda</string>
+  <string name="settings_upload_finish_title">Enda</string>
   <string name="settings_upload_swipe_left">Strjúktu til vinstri til að halda áfram.</string>
   <string name="settings_upload_click_btn">Smelltu til að loka stillingahjálpinni.</string>
   <string name="settings_cuc_loading">hleð...</string>

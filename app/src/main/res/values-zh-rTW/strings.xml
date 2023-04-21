@@ -320,7 +320,7 @@
   <string name="settings_cuc_auto_scan">自動備份默認相冊</string>
   <string name="settings_cuc_pick_albums">選擇備份相冊</string>
   <string name="settings_cuc_remote_lib_hint">選擇你要配置的選項，這些設置以後可以在設置菜單里修改。</string>
-  <string name="settings_cuc_finish_title">完成</string>
+  <string name="settings_upload_finish_title">完成</string>
   <string name="settings_upload_ready">Seafile將會從你指定的文件夾上傳文件，在這個過程中你可以隨時關閉該應用</string>
   <string name="settings_upload_swipe_left">向左滑進入下一步</string>
   <string name="settings_upload_click_btn">點擊按鈕關閉配置助手</string>

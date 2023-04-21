@@ -1,6 +1,7 @@
 package com.seafile.seadroid2.ui.fragment;
 
 import android.app.Activity;
+import android.app.Presentation;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -47,6 +48,7 @@ import com.seafile.seadroid2.ui.dialog.ClearCacheTaskDialog;
 import com.seafile.seadroid2.ui.dialog.ClearPasswordTaskDialog;
 import com.seafile.seadroid2.ui.dialog.SwitchStorageTaskDialog;
 import com.seafile.seadroid2.ui.dialog.TaskDialog.TaskDialogListener;
+import com.seafile.seadroid2.upload.file.FileUploadConfigActivity;
 import com.seafile.seadroid2.util.ConcurrentAsyncTask;
 import com.seafile.seadroid2.util.Utils;
 
@@ -70,6 +72,10 @@ public class SettingsFragment extends CustomPreferenceFragment {
 //    public static final String CONTACTS_UPLOAD_REMOTE_LIBRARY = "com.seafile.seadroid2.contacts.upload.library";
     public static final int CHOOSE_CLOUD_UPLOAD_REQUEST = 2;
     public static final int CHOOSE_ALBUM_UPLOAD_REQUEST = 3;
+    public static final int CHOOSE_FILE_UPLOAD_REQUEST = 4;
+
+    public static final String FILE_UPLOAD_ONLY_UPLOAD = "com.seafile.seadroid2.upload.file.only_upload";
+    public static final String FILE_UPLOAD_ONLY_SYNC = "com.seafile.seadroid2.upload.file.only_sync";
 
     public static final String CLOUD_UPLOAD_BOTH_PAGES = "com.seafile.seadroid2.upload";
     public static final String CLOUD_UPLOAD_REMOTE_LIBRARY = "com.seafile.seadroid2.upload.remote_library";
@@ -97,6 +103,11 @@ public class SettingsFragment extends CustomPreferenceFragment {
 
     // CallLog upload
     private CheckBoxPreference callUploadSwitch;
+
+    // file upload
+    private CheckBoxPreference fileUploadSwitch;
+    private Preference fileLocalDirectoriesPref;
+    private PreferenceCategory fileAdvancedCategory;
 
     // privacy
     private PreferenceCategory cPrivacyCategory;
@@ -536,6 +547,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
 
         initAlbumUploadSettings();
         initCallLogUploadSettings();
+        initFileUploadSettings();
 
         refreshCloudUploadView();
     }
@@ -634,6 +646,40 @@ public class SettingsFragment extends CustomPreferenceFragment {
         });
     }
 
+    private void initFileUploadSettings(){
+        fileAdvancedCategory = (PreferenceCategory) findPreference(SettingsManager.FILE_UPLOAD_ADVANCED_CATEGORY_KEY);
+
+        fileLocalDirectoriesPref = findPreference(SettingsManager.FILE_UPLOAD_DIRECTORIES_KEY);
+        fileLocalDirectoriesPref.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                Intent intent = new Intent(mActivity, FileUploadConfigActivity.class);
+                startActivityForResult(intent, CHOOSE_FILE_UPLOAD_REQUEST);
+                return true;
+            }
+        });
+
+        fileUploadSwitch = (CheckBoxPreference) findPreference(SettingsManager.FILE_UPLOAD_SWITCH_KEY);
+        fileUploadSwitch.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isChecked = (Boolean) newValue;
+                    if (!isChecked) {
+                        fileAdvancedCategory.removePreference(fileLocalDirectoriesPref);
+                        UploadManager.disableAccountUploadSync(accountMgr.getCurrentAccount(), UploadManager.FILE_SYNC);
+                    }
+                    else {
+                        Intent intent = new Intent(mActivity, FileUploadConfigActivity.class);
+                        startActivityForResult(intent, CHOOSE_FILE_UPLOAD_REQUEST);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
     private void clearPasswordSilently() {
         ConcurrentAsyncTask.submit(new Runnable() {
             @Override
@@ -694,6 +740,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
 
         refreshAlbumUploadView();
         refreshCallLogUploadView();
+        refreshFileUploadView();
     }
 
     private void refreshAlbumUploadView(){
@@ -746,8 +793,19 @@ public class SettingsFragment extends CustomPreferenceFragment {
             callUploadSwitch.setChecked(false);
             return;
         }
-        mActivity.requestReadCallLogPermission();
         callUploadSwitch.setChecked(true);
+    }
+
+    private void refreshFileUploadView() {
+        Account camAccount = accountMgr.getCurrentAccount();
+        if(camAccount == null || !UploadManager.isEnableCloudUploadSync(camAccount, UploadManager.FILE_SYNC)){
+            fileUploadSwitch.setChecked(false);
+            fileAdvancedCategory.removePreference(fileLocalDirectoriesPref);
+            return;
+        }
+        fileUploadSwitch.setChecked(true);
+        fileAdvancedCategory.addPreference(fileLocalDirectoriesPref);
+        fileLocalDirectoriesPref.setSummary(TextUtils.join(",", SettingsManager.instance().getFileUploadDirs(accountMgr.getCurrentAccount().getSignature())));
     }
 
     private void clearCache() {
@@ -788,6 +846,8 @@ public class SettingsFragment extends CustomPreferenceFragment {
             case CHOOSE_ALBUM_UPLOAD_REQUEST:
                 refreshAlbumUploadView();
                 break;
+            case CHOOSE_FILE_UPLOAD_REQUEST:
+                refreshFileUploadView();
 //            case CHOOSE_CONTACTS_UPLOAD_REQUEST:
 //                if (resultCode == Activity.RESULT_OK) {
 //                    if (data == null) {

@@ -346,7 +346,7 @@
   <string name="settings_cuc_auto_scan">Automaattisesti arvaa kameran albumit</string>
   <string name="settings_cuc_pick_albums">Anna minun valita omat valokuva albumit</string>
   <string name="settings_cuc_remote_lib_hint">Valitse ensisijainen tili ja kirjasto. \n Voit muuttaa näitä valintoja myöhemmin Asetuksista.</string>
-  <string name="settings_cuc_finish_title">Loppu</string>
+  <string name="settings_upload_finish_title">Loppu</string>
   <string name="settings_upload_ready">Seafile aloittaa tiedostojen lähettyksen valitsemistasi kansioista kunhan olet hyväksynyt tämän alla. \n Voit sulkea sovelluksen prosessin aikana.</string>
   <string name="settings_upload_swipe_left">Pyyhkäise vasemmalle jatkaaksesi.</string>
   <string name="settings_upload_click_btn">Napauta sulkeaksesi  asetusten avustajan.</string>

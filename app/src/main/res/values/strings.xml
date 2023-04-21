@@ -374,7 +374,7 @@
     <string name="settings_cuc_auto_scan">Automatically guess camera albums</string>
     <string name="settings_cuc_pick_albums">Let me pick my photo albums</string>
     <string name="settings_cuc_remote_lib_hint">Choose your preferred account and library. \nYou can change these options later in the Settings.</string>
-    <string name="settings_cuc_finish_title">Finish</string>
+    <string name="settings_upload_finish_title">Finish</string>
     <string name="settings_upload_ready">Seafile will begin uploading files from your selected folders after you confirm below.\nFeel free to close the app during this process.</string>
     <string name="settings_upload_swipe_left">Swipe left to continue.</string>
     <string name="settings_upload_click_btn">Click to close the configuration helper.</string>
@@ -587,4 +587,26 @@
     <string name="settings_calllog_upload_started">CallLog upload started</string>
     <string name="settings_calllog_upload_turn_on">CallLog Upload</string>
     <string name="permission_read_call_log_rationale">To upload call log, allow read call log permission to process them.</string>
+    <string name="settings_file_selected_local_dir_title">Selected Local Directory</string>
+    <string name="settings_file_selection_local_dir_title">Select Local Directory</string>
+    <string name="settings_file_upload_to_parent_folder">Up to Parent Folder</string>
+    <string name="settings_file_choose_a_directory">Choose a directory</string>
+    <string name="settings_file_loading">loading...</string>>
+    <string name="settings_file_ready">Seafile will begin uploading files from your selected folders after you confirm below.\nFeel free to close the app during this process.</string>
+    <string name="settings_file_finish_title">Finish</string>
+    <string name="settings_file_click_btn">Click to close the configuration helper.</string>
+    <string name="settings_file_upload_advanced_feature_title">File Upload</string>
+    <string name="settings_file_advance_feature_title">File Upload</string>
+    <string name="settings_file_upload_started">File upload started</string>
+    <string name="settings_file_upload_stopped">File upload stopped</string>
+    <string name="settings_file_upload_turn_on">Turn On File Upload</string>
+    <string name="settings_file_upload_advanced_feature_subtitle">Custom upload options</string>
+    <string name="settings_file_upload_selected_local_dir_title">Selected Upload Local Directory</string>
+    <string name="settings_file_upload_selection_local_dir_title">Select Upload Local Directory</string>
+    <string name="settings_file_sync_selected_local_dir_title">Selected Sync Local Directory</string>
+    <string name="settings_file_sync_selection_local_dir_title">Select Sync Local Directory</string>
+    <string name="settings_file_upload_dir_auto_scan">Auto scan files by default</string>
+    <string name="settings_file_upload_choose_dir">Change Files</string>
+    <string name="permission_read_external_storage_rationale">To upload files, allow read external storage permission to process them.</string>
+    <string name="request_all_permission_rationale">To process files and upload, allow permissions to access them.</string>
 </resources>

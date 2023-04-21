@@ -361,7 +361,7 @@ Zum Aktualisieren einmal antippen</string>
   <string name="settings_cuc_auto_scan">Hochzuladende Alben automatisch auswählen</string>
   <string name="settings_cuc_pick_albums">Hochzuladende Alben selbst auswählen</string>
   <string name="settings_cuc_remote_lib_hint">Wählen Sie aus, welches Benutzerkonto und welche Bibliothek Sie bevorzugen.\nSie können beides in den Einstellungen jederzeit anpassen.</string>
-  <string name="settings_cuc_finish_title">Beenden</string>
+  <string name="settings_upload_finish_title">Beenden</string>
   <string name="settings_upload_ready">Seafile wird nun die Dateien aus den ausgewählten Ordnern hochladen. \nSie können die App währenddessen schließen.</string>
   <string name="settings_upload_swipe_left">Nach links Wischen um fortzufahren.</string>
   <string name="settings_upload_click_btn">Fertig – Sie können den Einrichtungsassistenten jetzt beenden.</string>

@@ -1,16 +1,26 @@
 package com.seafile.seadroid2.upload;
 
+import android.Manifest;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.ContentObserver;
 import android.net.Uri;
+import android.os.FileObserver;
 import android.os.IBinder;
+import android.provider.CallLog;
 import android.provider.MediaStore;
+import android.support.v4.content.ContextCompat;
 
+import com.google.common.collect.Lists;
 import com.seafile.seadroid2.SettingsManager;
 import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountManager;
+
+import java.io.File;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This service monitors the media provider content provider for new images/videos.
@@ -54,10 +64,8 @@ public class MediaObserverService extends Service {
 
                     // same goes for if the list of selected buckets has been changed
                     case SettingsManager.SHARED_PREF_ALBUM_UPLOAD_BUCKETS:
-                        doFullResync = true;
-                        break;
 
-                    // the repo changed, also do a full resync
+                        // the repo changed, also do a full resync
                     case SettingsManager.SHARED_PREF_CLOUD_UPLOAD_REPO_ID:
                         doFullResync = true;
                         break;
@@ -95,6 +103,8 @@ public class MediaObserverService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        unregisterContentObservers();
+        registerContentObservers();
         return START_STICKY;
     }
 
@@ -105,11 +115,13 @@ public class MediaObserverService extends Service {
 
     private void registerContentObservers() {
         mediaObserver = new MediaObserver();
-
         getApplicationContext().getContentResolver().registerContentObserver(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, mediaObserver);
-
-//        getApplicationContext().getContentResolver().registerContentObserver
+        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED){
+                getApplicationContext().getContentResolver().registerContentObserver(
+                        CallLog.Calls.CONTENT_URI, false, mediaObserver);
+        }
+        //        getApplicationContext().getContentResolver().registerContentObserver
 //                (MediaStore.Video.Media.EXTERNAL_CONTENT_URI, false, mediaObserver);
 
         // Log.i(DEBUG_TAG, "Started watchting for new media content.");

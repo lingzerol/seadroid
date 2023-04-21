@@ -359,7 +359,7 @@
   <string name="settings_cuc_auto_scan">Deducir automáticamente álbumes de la cámara</string>
   <string name="settings_cuc_pick_albums">Permitirme elegir los álbumes de fotos</string>
   <string name="settings_cuc_remote_lib_hint">Escoja su cuenta y biblioteca preferidas. \nLuego puede cambiar estas opciones en Configuración.</string>
-  <string name="settings_cuc_finish_title">Terminar</string>
+  <string name="settings_upload_finish_title">Terminar</string>
   <string name="settings_upload_ready">Seafile comenzará a subir los archivos de las carpetas seleccionadas después de su confirmación.\nPuede cerrar la app durante este proceso.</string>
   <string name="settings_upload_swipe_left">Deslice a la izquierda para continuar.</string>
   <string name="settings_upload_click_btn">Click para cerrar la ayuda de configuración.</string>

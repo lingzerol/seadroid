@@ -34,6 +34,7 @@ import com.seafile.seadroid2.ui.CustomNotificationBuilder;
 import com.seafile.seadroid2.ui.activity.AccountsActivity;
 import com.seafile.seadroid2.upload.album.AlbumSync;
 import com.seafile.seadroid2.upload.callLog.CallLogSync;
+import com.seafile.seadroid2.upload.file.FileSync;
 import com.seafile.seadroid2.util.SyncStatus;
 import com.seafile.seadroid2.util.Utils;
 
@@ -116,6 +117,8 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
     public UploadSync getUploadSync(int synType){
         if(synType == UploadManager.ALBUM_SYNC){
             return new AlbumSync(this);
+        }else if(synType == UploadManager.FILE_SYNC){
+            return new FileSync(this);
         }else if(synType == UploadManager.CALLLOG_SYNC){
             return new CallLogSync(this);
         }

@@ -5,17 +5,12 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
-import com.seafile.seadroid2.account.Account;
 import com.seafile.seadroid2.account.AccountManager;
 import com.seafile.seadroid2.gesturelock.LockPatternUtils;
-import com.seafile.seadroid2.loopimages.DirInfo;
 import com.seafile.seadroid2.util.Utils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Access the app settings
@@ -67,6 +62,8 @@ public final class SettingsManager {
     public static final String SHARED_PREF_CLOUD_UPLOAD_REPO_NAME = PKG + ".upload.repoName";
     public static final String SHARED_PREF_CLOUD_UPLOAD_DATA_PATH = PKG + ".upload.dataPath";
     public static final String SHARED_PREF_ALBUM_UPLOAD_BUCKETS = PKG + ".upload.album.buckets";
+    public static final String SHARED_PREF_FILE_UPLOAD_DIRS = PKG + ".upload.file.upload_dirs";
+
 
 //    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_EMAIL = PKG + ".camera.account.email";
 //    public static final String SHARED_PREF_CAMERA_UPLOAD_ACCOUNT_NAME = PKG + ".camera.account.name";
@@ -98,7 +95,9 @@ public final class SettingsManager {
     public static final String ALBUM_UPLOAD_BUCKETS_KEY = "album_upload_buckets_key";
     public static final String CLOUD_UPLOAD_STATE = "cloud_upload_state";
     public static final String CALLLOG_UPLOAD_SWITCH_KEY = "calllog_upload_switch_key";
-
+    public static final String FILE_UPLOAD_SWITCH_KEY = "file_upload_switch_key";
+    public static final String FILE_UPLOAD_DIRECTORIES_KEY = "file_upload_directories_key";
+    public static final String FILE_UPLOAD_ADVANCED_CATEGORY_KEY = "category_file_upload_advanced_key";
     //contacts
     public static final String CONTACTS_UPLOAD_CATEGORY_KEY = "category_contacts_upload_key";
     public static final String CONTACTS_UPLOAD_SWITCH_KEY = "contacts_upload_switch_key";
@@ -347,6 +346,16 @@ public final class SettingsManager {
 
     public List<String> getAlbumUploadBucketList(String accountSignature) {
         String s = sharedPref.getString(SHARED_PREF_ALBUM_UPLOAD_BUCKETS + "-" + accountSignature, "");
+        return Arrays.asList(TextUtils.split(s, ","));
+    }
+
+    public void setFileUploadDirs(String accountSignature, List<String> list) {
+        String s = TextUtils.join(",", list);
+        sharedPref.edit().putString(SHARED_PREF_FILE_UPLOAD_DIRS + "-" + accountSignature, s).commit();
+    }
+
+    public List<String> getFileUploadDirs(String accountSignature) {
+        String s = sharedPref.getString(SHARED_PREF_FILE_UPLOAD_DIRS + "-" + accountSignature, "");
         return Arrays.asList(TextUtils.split(s, ","));
     }
 

@@ -240,7 +240,7 @@
   <string name="settings_upload_remote_lib_account">Escolha uma conta</string>
   <string name="settings_upload_remote_lib_repo">%s foi selecionado</string>
   <string name="settings_upload_upload_to_parent_folder">Subir pasta</string>
-  <string name="settings_cuc_finish_title">Finalizar</string>
+  <string name="settings_upload_finish_title">Finalizar</string>
   <string name="settings_upload_swipe_left">Deslize para a esquerda para continuar.</string>
   <string name="settings_upload_click_btn">Clique para fechar  o ajudante de configuração</string>
   <string name="settings_cuc_loading">carregando...</string>

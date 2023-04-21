@@ -316,7 +316,7 @@
   <string name="settings_cuc_auto_scan">Automatisch zoeken naar camera-folders</string>
   <string name="settings_cuc_pick_albums">Laat mij mijn fotoalbums kiezen</string>
   <string name="settings_cuc_remote_lib_hint">Kies je voorkeursaccount en -bibliotheek.\nJe kunt deze opties later via instellingen wijzigen.</string>
-  <string name="settings_cuc_finish_title">Afronden</string>
+  <string name="settings_upload_finish_title">Afronden</string>
   <string name="settings_upload_swipe_left">Veeg naar links om verder te gaan</string>
   <string name="settings_upload_click_btn">Klik om de configuratiehulp af te sluiten.</string>
   <string name="settings_cuc_loading">laden...</string>

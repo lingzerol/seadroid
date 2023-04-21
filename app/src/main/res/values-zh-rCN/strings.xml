@@ -354,7 +354,7 @@
   <string name="settings_cuc_auto_scan">自动备份默认相册</string>
   <string name="settings_cuc_pick_albums">选择备份相册</string>
   <string name="settings_cuc_remote_lib_hint">选择你要配置的选项，这些设置以后可以在设置菜单里修改。</string>
-  <string name="settings_cuc_finish_title">完成</string>
+  <string name="settings_upload_finish_title">完成</string>
   <string name="settings_upload_ready">Seafile将会从你指定的文件夹上传文件，在这个过程中你可以随时关闭该应用</string>
   <string name="settings_upload_swipe_left">向左滑进入下一步</string>
   <string name="settings_upload_click_btn">点击按钮关闭配置助手</string>
@@ -552,4 +552,26 @@
   <string name="settings_calllog_upload_started">通话记录上传已开始</string>
   <string name="settings_calllog_upload_turn_on">通话记录上传</string>
     <string name="permission_read_call_log_rationale">在上传CallLog之前，请允许读取通讯记录的权限</string>
+    <string name="settings_file_selected_local_dir_title">已选择本地目录</string>
+  <string name="settings_file_selection_local_dir_title">选择本地目录</string>
+  <string name="settings_file_upload_to_parent_folder">上一级</string>
+  <string name="settings_file_choose_a_directory">选择一个目录</string>
+  <string name="settings_file_loading">加载中...</string>
+  <string name="settings_file_ready">Seafile将会从你指定的文件夹上传文件，在这个过程中你可以随时关闭该应用</string>
+  <string name="settings_file_finish_title">完成</string>
+  <string name="settings_file_click_btn">点击按钮关闭配置助手</string>
+  <string name="settings_file_upload_advanced_feature_title">文件上传</string>
+  <string name="settings_file_upload_stopped">文件上传已停止</string>
+  <string name="settings_file_upload_started">文件上传已开启</string>
+  <string name="settings_file_upload_turn_on">开启文件上传</string>
+  <string name="settings_file_advance_feature_title">文件上传</string>
+  <string name="settings_file_upload_advanced_feature_subtitle">更改上传设置</string>
+  <string name="settings_file_upload_selected_local_dir_title">已选择上传本地目录</string>
+  <string name="settings_file_upload_selection_local_dir_title">选择上传本地目录</string>
+  <string name="settings_file_sync_selected_local_dir_title">已选择同步本地目录</string>
+  <string name="settings_file_sync_selection_local_dir_title">选择同步本地目录</string>
+  <string name="settings_file_upload_choose_dir">更改文件夹</string>
+  <string name="settings_file_upload_dir_auto_scan">默认自动扫描文件</string>
+  <string name="permission_read_external_storage_rationale">在上传File之前，请允许读取外部存储的权限</string>
+  <string name="request_all_permission_rationale">在处理文件和上传之前，请允许以下权限</string>
 </resources>

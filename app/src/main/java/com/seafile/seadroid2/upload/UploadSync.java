@@ -126,7 +126,7 @@ public abstract class UploadSync {
         }
     }
 
-    public abstract void uploadContents(SyncResult syncResult, DataManager dataManager) throws SeafException, InterruptedException;
+    public abstract void uploadContents(SyncResult syncResult, DataManager dataManager) throws SeafException, InterruptedException, IOException;
 
     public void cancelSync(Account account){
         UploadManager.disableAccountUploadSync(account, this.syncType);

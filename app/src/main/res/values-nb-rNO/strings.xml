@@ -274,7 +274,7 @@
   <string name="settings_upload_remote_lib_account">Velg en konto</string>
   <string name="settings_upload_remote_lib_repo">%s ble valgt</string>
   <string name="settings_upload_upload_to_parent_folder">Opp til forrige mappe</string>
-  <string name="settings_cuc_finish_title">Avslutt</string>
+  <string name="settings_upload_finish_title">Avslutt</string>
   <string name="settings_upload_swipe_left">Sveip mot venstre for å fortsette.</string>
   <string name="settings_upload_click_btn">Trykk for å lukke konfigurasjonsassistenten.</string>
   <string name="settings_cuc_loading">laster...</string>

@@ -188,7 +188,7 @@ public class AlbumSync extends UploadSync {
 
         Utils.utilsLogInfo(true, "========Found ["+ fileIter+"/"+fileNum+"] images in bucket "+bucketName+"========");
         try {
-            String cacheName = CACHE_NAME + repoID + "-" + bucketName;
+            String cacheName = CACHE_NAME + "-" + repoID + "-" + bucketName;
             DirentCache cache = getCache(cacheName, getRepoID(), Utils.pathJoin(getDirectoryPath(), bucketName), dataManager);
             if(cache != null) {
                 int n = cache.getCount();

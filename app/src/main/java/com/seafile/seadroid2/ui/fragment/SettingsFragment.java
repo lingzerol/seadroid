@@ -109,6 +109,9 @@ public class SettingsFragment extends CustomPreferenceFragment {
     private Preference fileLocalDirectoriesPref;
     private PreferenceCategory fileAdvancedCategory;
 
+    // sms upload
+    private CheckBoxPreference smsUploadSwitch;
+
     // privacy
     private PreferenceCategory cPrivacyCategory;
     private Preference clientEncPref;
@@ -548,6 +551,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
         initAlbumUploadSettings();
         initCallLogUploadSettings();
         initFileUploadSettings();
+        initSmsUploadSettings();
 
         refreshCloudUploadView();
     }
@@ -680,6 +684,26 @@ public class SettingsFragment extends CustomPreferenceFragment {
         });
     }
 
+    private void initSmsUploadSettings(){
+        smsUploadSwitch = (CheckBoxPreference) findPreference(SettingsManager.SMS_UPLOAD_SWITCH_KEY);
+        smsUploadSwitch.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                if (newValue instanceof Boolean) {
+                    boolean isChecked = (Boolean) newValue;
+                    if (!isChecked) {
+                        UploadManager.disableAccountUploadSync(accountMgr.getCurrentAccount(), UploadManager.SMS_SYNC);
+                    }
+                    else {
+                        UploadManager.enableAccountUploadSync(accountMgr.getCurrentAccount(), UploadManager.SMS_SYNC);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
     private void clearPasswordSilently() {
         ConcurrentAsyncTask.submit(new Runnable() {
             @Override
@@ -741,6 +765,7 @@ public class SettingsFragment extends CustomPreferenceFragment {
         refreshAlbumUploadView();
         refreshCallLogUploadView();
         refreshFileUploadView();
+        refreshSmsUploadView();
     }
 
     private void refreshAlbumUploadView(){
@@ -807,6 +832,16 @@ public class SettingsFragment extends CustomPreferenceFragment {
         fileAdvancedCategory.addPreference(fileLocalDirectoriesPref);
         fileLocalDirectoriesPref.setSummary(TextUtils.join(",", SettingsManager.instance().getFileUploadDirs(accountMgr.getCurrentAccount().getSignature())));
     }
+
+    private void refreshSmsUploadView() {
+        Account camAccount = accountMgr.getCurrentAccount();
+        if(camAccount == null || !UploadManager.isEnableCloudUploadSync(camAccount, UploadManager.SMS_SYNC)){
+            smsUploadSwitch.setChecked(false);
+            return;
+        }
+        smsUploadSwitch.setChecked(true);
+    }
+
 
     private void clearCache() {
         ClearCacheTaskDialog dialog = new ClearCacheTaskDialog();

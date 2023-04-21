@@ -25,8 +25,8 @@ public class UploadManager {
     public static final int ALBUM_SYNC = 1;
     public static final int FILE_SYNC = 2;
     public static final int CALLLOG_SYNC = 4;
-    public static final int BROWSER_RECORD_SYNC = 8;
-    public static final int SYNC_TPYES[] = {ALBUM_SYNC, FILE_SYNC, CALLLOG_SYNC, BROWSER_RECORD_SYNC};
+    public static final int SMS_SYNC = 8;
+    public static final int SYNC_TPYES[] = {ALBUM_SYNC, FILE_SYNC, CALLLOG_SYNC, SMS_SYNC};
 
 
     private AccountManager accountManager;
@@ -36,7 +36,7 @@ public class UploadManager {
     }
 
     public static boolean checkSyncType(int syncType){
-        if(syncType == ANY_SYNC || syncType == ALBUM_SYNC || syncType == FILE_SYNC || syncType == CALLLOG_SYNC || syncType == BROWSER_RECORD_SYNC){
+        if(syncType == ANY_SYNC || syncType == ALBUM_SYNC || syncType == FILE_SYNC || syncType == CALLLOG_SYNC || syncType == SMS_SYNC){
             return true;
         }
         return false;
@@ -49,8 +49,8 @@ public class UploadManager {
             return "File";
         }else if (syncType == CALLLOG_SYNC){
             return "CallLog";
-        }else if(syncType == BROWSER_RECORD_SYNC){
-            return "BrowserRecord";
+        }else if(syncType == SMS_SYNC){
+            return "Sms";
         }
         return "";
     }

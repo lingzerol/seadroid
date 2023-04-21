@@ -609,4 +609,7 @@
     <string name="settings_file_upload_choose_dir">Change Files</string>
     <string name="permission_read_external_storage_rationale">To upload files, allow read external storage permission to process them.</string>
     <string name="request_all_permission_rationale">To process files and upload, allow permissions to access them.</string>
+    <string name="settings_sms_upload_stopped">Sms upload stopped</string>
+    <string name="settings_sms_upload_started">Sms upload started</string>
+    <string name="settings_sms_upload_turn_on">Sms Upload</string>
 </resources>

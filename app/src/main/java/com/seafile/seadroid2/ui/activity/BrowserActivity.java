@@ -586,6 +586,9 @@ public class BrowserActivity extends BaseActivity
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
             permissions.add(Manifest.permission.READ_CALL_LOG);
         }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.READ_SMS);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 //            if(ActivityCompat.checkSelfPermission(this, Manifest.permission.MANAGE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
 //                permissions.add(Manifest.permission.MANAGE_EXTERNAL_STORAGE);

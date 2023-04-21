@@ -1,12 +1,13 @@
-package com.seafile.seadroid2.upload.callLog;
+package com.seafile.seadroid2.upload.sms;
 
 import android.Manifest;
 import android.content.SyncResult;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.provider.CallLog;
+import android.provider.Telephony;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.widget.Switch;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
@@ -25,6 +26,8 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -32,16 +35,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class CallLogSync extends UploadSync {
-    private static final String DEBUG_TAG = "CallLogUploadSync";
-    private static final String CACHE_NAME = "CallLogSync";
-    private final String BASE_DIR = super.BASE_DIR + "/CallLog";
+public class SmsSync extends UploadSync {
+    private static final String DEBUG_TAG = "SmsUploadSync";
+    private static final String CACHE_NAME = "SmsSync";
+    private final String BASE_DIR = super.BASE_DIR + "/Sms";
 
     private Cursor previous = null;
     private int synNum = 0;
 
-    public CallLogSync(UploadSyncAdapter adapter) {
-        super(adapter, UploadManager.CALLLOG_SYNC);
+    public SmsSync(UploadSyncAdapter adapter) {
+        super(adapter, UploadManager.SMS_SYNC);
     }
 
     public String getDirectoryPath(){
@@ -49,33 +52,33 @@ public class CallLogSync extends UploadSync {
     }
 
     public void uploadContents(SyncResult syncResult, DataManager dataManager) throws SeafException, InterruptedException{
-        Utils.utilsLogInfo(true, "========Starting to upload CallLog...");
+        Utils.utilsLogInfo(true, "========Starting to upload Sms...");
         synNum = 100;
         if(previous == null){
             if(synNum > 10) {
-                Utils.utilsLogInfo(true, "========Clear CallLog cache...");
+                Utils.utilsLogInfo(true, "========Clear Sms cache...");
                 dbHelper.cleanCache();
                 synNum = 0;
             }else {
                 ++synNum;
             }
         }
-        if (ContextCompat.checkSelfPermission(adapter.getContext(), Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED){
-            Utils.utilsLogInfo(true, "Read Call Log permission is not granted.");
+        if (ContextCompat.checkSelfPermission(adapter.getContext(), Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED){
+            Utils.utilsLogInfo(true, "Read Sms permission is not granted.");
             return;
         }
         Cursor cursor = previous;
         if(cursor == null) {
-            cursor = adapter.getContentResolver().query(CallLog.Calls.CONTENT_URI,
+            cursor = adapter.getContentResolver().query(Telephony.Sms.CONTENT_URI,
                     null,
                     null,
                     null,
-                    CallLog.Calls.DATE + " ASC");
+                    Telephony.Sms.DATE + " ASC");
         }
         int fileIter = cursor.getPosition();
         int fileNum = cursor.getCount();
-        Utils.utilsLogInfo(true, "========Found ["+ fileIter+"/"+fileNum+"] CallLogs ========");
-        List<File> callLogs = Lists.newArrayList();
+        Utils.utilsLogInfo(true, "========Found ["+ fileIter+"/"+fileNum+"] Sms ========");
+        List<File> SmsList = Lists.newArrayList();
         try {
             adapter.createDirectory(dataManager, getRepoID(), getDirectoryPath());
             File repoFile = dataManager.getLocalRepoFile(getRepoName(), getRepoID(), getDirectoryPath());
@@ -113,18 +116,17 @@ public class CallLogSync extends UploadSync {
                     String dateStr = cache.get(i).name;
                     dateStr = dateStr.substring(0, dateStr.lastIndexOf("."));
                     long timestamp = getTimeStamp(dateStr);
-                    while (!isCancelled() && cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE)) <= timestamp) {
-                        String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
-                        String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-                        long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
-                        int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
-                        int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
-                        Log.d(DEBUG_TAG, "readCallLog: number=" + number + ", date=" + date + ", type=" + type + ", duration=" + duration);
-                        String filePath = getFilePath(repoFile.getAbsolutePath(), date, number);
+                    while (!isCancelled() && cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE)) <= timestamp) {
+                        String address = cursor.getString(cursor.getColumnIndex(Telephony.Sms.ADDRESS));
+                        String body = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
+                        String subject = cursor.getString(cursor.getColumnIndex(Telephony.Sms.SUBJECT));
+                        long date = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
+                        int type = cursor.getInt(cursor.getColumnIndex(Telephony.Sms.TYPE));
+                        String filePath = getFilePath(repoFile.getAbsolutePath(), date, address);
                         if (date < timestamp && !dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                            File file = generateCallLog(filePath, name, number, date, type, duration);
+                            File file = generateSms(filePath, address, subject, body, date, type);
                             if (file != null && file.exists()) {
-                                callLogs.add(file);
+                                SmsList.add(file);
                                 adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
                             }else{
                                 syncResult.stats.numSkippedEntries++;
@@ -147,17 +149,16 @@ public class CallLogSync extends UploadSync {
                 }
             }
             while (!isCancelled() && !cursor.isAfterLast()) {
-                String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
-                String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-                long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
-                int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
-                int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
-                Log.d(DEBUG_TAG, "readCallLog: number=" + number + ", date=" + date + ", type=" + type + ", duration=" + duration);
-                String filePath = getFilePath(repoFile.getAbsolutePath(), date, number);
+                String address = cursor.getString(cursor.getColumnIndex(Telephony.Sms.ADDRESS));
+                String body = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
+                String subject = cursor.getString(cursor.getColumnIndex(Telephony.Sms.SUBJECT));
+                long date = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
+                int type = cursor.getInt(cursor.getColumnIndex(Telephony.Sms.TYPE));
+                String filePath = getFilePath(repoFile.getAbsolutePath(), date, address);
                 if (!dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                    File file = generateCallLog(filePath, name, number, date, type, duration);
+                    File file = generateSms(filePath, address, subject, body, date, type);
                     if (file != null && file.exists()) {
-                        callLogs.add(file);
+                        SmsList.add(file);
                         adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
                     }else{
                         syncResult.stats.numSkippedEntries++;
@@ -174,7 +175,7 @@ public class CallLogSync extends UploadSync {
         }catch (Exception e){
             Utils.utilsLogInfo(true, e.toString());
         }
-        Utils.utilsLogInfo(true,"=======Have checked ["+Integer.toString(fileIter)+"/"+Integer.toString(fileNum)+"] callLogs======");
+        Utils.utilsLogInfo(true,"=======Have checked ["+Integer.toString(fileIter)+"/"+Integer.toString(fileNum)+"] Sms======");
         Utils.utilsLogInfo(true,"=======waitForUploads===");
         adapter.waitForUploads();
         adapter.checkUploadResult(this, syncResult);
@@ -184,16 +185,16 @@ public class CallLogSync extends UploadSync {
         }else{
             previous = cursor;
         }
-        for(File file:callLogs){
+        for(File file:SmsList){
             if(file != null && file.exists()){
                 file.delete();
             }
         }
-        Utils.utilsLogInfo(true, "========End uploading CallLog...");
+        Utils.utilsLogInfo(true, "========End uploading sms...");
     }
 
-    private String getFilePath(String repoPath, long date, String number){
-        return Utils.pathJoin(repoPath, getDateStr(date) + "(" + number + ").json");
+    private String getFilePath(String repoPath, long date, String address){
+        return Utils.pathJoin(repoPath, getDateStr(date) + "(" + address + ").json");
     }
 
     private long getTimeStamp(String dateStr){
@@ -216,37 +217,54 @@ public class CallLogSync extends UploadSync {
         return dateFormat.format(date);
     }
 
-    private File generateCallLog(String path, String name, String number, long date, int type, int duration){
+    private File generateSms(String path, String address, String subject, String body, long date, int type){
         try {
+//            if(subject != null){
+//                subject = new String(subject.getBytes(), StandardCharsets.UTF_8);
+//            }
+//            if(body != null){
+//                body = new String(body.getBytes(), StandardCharsets.UTF_8);
+//            }
+//            Utils.utilsLogInfo(true, "Sms content: " + address + " " + subject + " " + body + " " + Long.toString(date) + " " + Integer.toString(type));
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("Name", name);
-            jsonObject.put("Number", number);
+            jsonObject.put("Address", address);
+            jsonObject.put("Subject", subject);
+            jsonObject.put("Body", body);
             jsonObject.put("TimeStamp", date);
             jsonObject.put("Date", getDateStr(date));
-            if(type == CallLog.Calls.INCOMING_TYPE){
-                jsonObject.put("CallType", "Incoming");
-            }else if(type == CallLog.Calls.OUTGOING_TYPE){
-                jsonObject.put("CallType", "Outgoing");
-            }else if(type == CallLog.Calls.MISSED_TYPE){
-                jsonObject.put("CallType", "Missed");
-            }else if(type == CallLog.Calls.VOICEMAIL_TYPE){
-                jsonObject.put("CallType", "VoiceMail");
-            }else if(type == CallLog.Calls.REJECTED_TYPE){
-                jsonObject.put("CallType", "Rejected");
-            }else if(type == CallLog.Calls.BLOCKED_TYPE){
-                jsonObject.put("CallType", "Blocked");
-            }else if(type == CallLog.Calls.ANSWERED_EXTERNALLY_TYPE){
-                jsonObject.put("CallType", "Answered externally");
-            }else{
-                jsonObject.put("CallType", "Unknown");
+            switch(type){
+                case Telephony.Sms.MESSAGE_TYPE_INBOX:
+                    jsonObject.put("SmsType", "Inbox");
+                    break;
+                case Telephony.Sms.MESSAGE_TYPE_OUTBOX:
+                    jsonObject.put("SmsType", "Outbox");
+                    break;
+                case Telephony.Sms.MESSAGE_TYPE_ALL:
+                    jsonObject.put("SmsType", "All");
+                    break;
+                case Telephony.Sms.MESSAGE_TYPE_DRAFT:
+                    jsonObject.put("SmsType", "Draft");
+                    break;
+                case Telephony.Sms.MESSAGE_TYPE_FAILED:
+                    jsonObject.put("SmsType", "Failed");
+                    break;
+                case Telephony.Sms.MESSAGE_TYPE_SENT:
+                    jsonObject.put("SmsType", "Sent");
+                    break;
+                case Telephony.Sms.MESSAGE_TYPE_QUEUED:
+                    jsonObject.put("SmsType", "Queued");
+                    break;
+                default:
+                    jsonObject.put("SmsType", "Unknown");
+                    break;
             }
             FileWriter fileWriter = new FileWriter(path, false);
             fileWriter.write(jsonObject.toString(4));
             fileWriter.close();
             return new File(path);
         }catch (Exception e){
-            Utils.utilsLogInfo(true, "Failed to create callLog file " + path + ": " + e.toString());
-            Log.d(DEBUG_TAG, "Failed to create callLog file " + path + ": " + e.toString());
+            Utils.utilsLogInfo(true, "Failed to create sms file " + path + ": " + e.toString());
+            Log.d(DEBUG_TAG, "Failed to create sms file " + path + ": " + e.toString());
         }
         return null;
     }

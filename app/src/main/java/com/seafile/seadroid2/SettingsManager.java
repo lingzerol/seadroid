@@ -98,6 +98,7 @@ public final class SettingsManager {
     public static final String FILE_UPLOAD_SWITCH_KEY = "file_upload_switch_key";
     public static final String FILE_UPLOAD_DIRECTORIES_KEY = "file_upload_directories_key";
     public static final String FILE_UPLOAD_ADVANCED_CATEGORY_KEY = "category_file_upload_advanced_key";
+    public static final String SMS_UPLOAD_SWITCH_KEY = "sms_upload_switch_key";
     //contacts
     public static final String CONTACTS_UPLOAD_CATEGORY_KEY = "category_contacts_upload_key";
     public static final String CONTACTS_UPLOAD_SWITCH_KEY = "contacts_upload_switch_key";

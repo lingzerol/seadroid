@@ -35,6 +35,7 @@ import com.seafile.seadroid2.ui.activity.AccountsActivity;
 import com.seafile.seadroid2.upload.album.AlbumSync;
 import com.seafile.seadroid2.upload.callLog.CallLogSync;
 import com.seafile.seadroid2.upload.file.FileSync;
+import com.seafile.seadroid2.upload.sms.SmsSync;
 import com.seafile.seadroid2.util.SyncStatus;
 import com.seafile.seadroid2.util.Utils;
 
@@ -121,6 +122,8 @@ public class UploadSyncAdapter extends AbstractThreadedSyncAdapter {
             return new FileSync(this);
         }else if(synType == UploadManager.CALLLOG_SYNC){
             return new CallLogSync(this);
+        }else if(synType == UploadManager.SMS_SYNC){
+            return new SmsSync(this);
         }
         return null;
     }

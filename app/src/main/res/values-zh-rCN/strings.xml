@@ -574,4 +574,7 @@
   <string name="settings_file_upload_dir_auto_scan">默认自动扫描文件</string>
   <string name="permission_read_external_storage_rationale">在上传File之前，请允许读取外部存储的权限</string>
   <string name="request_all_permission_rationale">在处理文件和上传之前，请允许以下权限</string>
+  <string name="settings_sms_upload_stopped">短信上传已停止</string>
+  <string name="settings_sms_upload_started">短信上传已开始</string>
+  <string name="settings_sms_upload_turn_on">短信上传</string>
 </resources>

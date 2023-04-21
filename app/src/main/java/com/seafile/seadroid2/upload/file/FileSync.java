@@ -69,7 +69,7 @@ public class FileSync extends UploadSync {
     public void uploadContents(SyncResult syncResult, DataManager dataManager) throws SeafException, InterruptedException, IOException{
         Utils.utilsLogInfo(true, "========Starting to upload files...");
         if((leftPaths == null || leftPaths.size() == 0) && previous == null){
-            if(synNum > 30) {
+            if(synNum > CLEAR_CACHE_BOUNDARY) {
                 Utils.utilsLogInfo(true, "========Clear file cache...");
                 dbHelper.cleanCache();
                 synNum = 0;
@@ -77,7 +77,6 @@ public class FileSync extends UploadSync {
                 ++synNum;
             }
         }
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
@@ -88,7 +87,7 @@ public class FileSync extends UploadSync {
 
         if(previous != null){
             Utils.utilsLogInfo(true, "========Continue uploading previous cache========");
-            previous = iterateCursor(syncResult, dataManager, previous);
+            previous = (FileIterator) iterateCursor(syncResult, dataManager, previous);
             if(isCancelled()){
                 Utils.utilsLogInfo(true, "========Cancel uploading========");
                 return;
@@ -152,7 +151,7 @@ public class FileSync extends UploadSync {
             });
             FileIterator cursor = new FileIterator(remotePath, cache);
             if(cursor.getCount() > 0) {
-                previous = iterateCursor(syncResult, dataManager, cursor);
+                previous = (FileIterator) iterateCursor(syncResult, dataManager, cursor);
             }else{
                 Utils.utilsLogInfo(true, "=======File Sync: the path " + localPath + " is cancelled because the directory is empty");
                 previous = null;
@@ -165,100 +164,9 @@ public class FileSync extends UploadSync {
         Utils.utilsLogInfo(true, "========End uploading files...");
     }
 
-    private FileIterator iterateCursor(SyncResult syncResult, DataManager dataManager, FileIterator cursor) throws SeafException, InterruptedException{
-        if(cursor == null || cursor.getCount() == 0){
-            Utils.utilsLogInfo(true,"=======Empty Cursor.===");
-            return null;
-        }
-        String bucketName = cursor.getBucketName();
-        int fileIter = cursor.getPosition();
-        int fileNum = cursor.getCount();
 
-        Utils.utilsLogInfo(true, "========Found ["+ fileIter+"/"+fileNum+"] files in bucket "+bucketName+"========");
-        try {
-            String cacheName = CACHE_NAME + "-" + repoID + "-" + bucketName.replace("/", "-");
-            DirentCache cache = getCache(cacheName, getRepoID(), Utils.pathJoin(getDirectoryPath(), bucketName), dataManager);
-            if(cache != null) {
-                int n = cache.getCount();
-                boolean done = false;
-                for (int i = 0; i < n; ++i) {
-                    if (cursor.isAfterLast()) {
-                        break;
-                    }
-                    SeafDirent item = cache.get(i);
-                    while (!isCancelled()) {
-                        if(cursor.getFileName() == null){
-                            continue;
-                        }
-                        if(cursor.getFileName().compareTo(item.name) > 0){
-                            break;
-                        }
-                        if (cursor.getFileName().compareTo(item.name) < 0 || item.size < cursor.getFileSize() && item.mtime < cursor.getFileModified()) {
-                            File file = cursor.getFile();
-                            if (file != null && file.exists() && dbHelper.isUploaded(getAccountSignature(), file.getPath(), file.lastModified())) {
-                                Log.d(DEBUG_TAG, "Skipping file " + file.getPath() + " because we have uploaded it in the past.");
-                            } else {
-                                if (file == null || !file.exists()) {
-                                    Log.d(DEBUG_TAG, "Skipping file " + file + " because it doesn't exist");
-                                    syncResult.stats.numSkippedEntries++;
-                                } else {
-                                    adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), Utils.pathJoin(getDirectoryPath(), bucketName));
-                                }
-                            }
-                        } else {
-//                        ++uploadedNum;
-//                        if(uploadedNum > leaveMeida){
-//                            if(cursor.deleteFile()){
-//                                Utils.utilsLogInfo(true, "====File " + cursor.getFileName() + " in bucket " + bucketName + " is deleted because it exists on the server. Skipping.");
-//                            }
-//                        }
-                            Log.d(DEBUG_TAG, "====File " + cursor.getFilePath() + " in bucket " + bucketName + " already exists on the server. Skipping.");
-                            dbHelper.markAsUploaded(getAccountSignature(), cursor.getFilePath(), cursor.getFileModified());
-                        }
-                        ++fileIter;
-                        if (!cursor.moveToNext()) {
-                            break;
-                        }
-                    }
-                    if (i == n - 1) {
-                        done = true;
-                    }
-                    if (isCancelled()) {
-                        break;
-                    }
-
-                }
-                if(done){
-                    cache.delete();
-                }
-            }
-            while (!isCancelled() && !cursor.isAfterLast()) {
-                File file = cursor.getFile();
-                if(file == null || !file.exists()){
-                    Log.d(DEBUG_TAG, "Skipping file " + file + " because it doesn't exist");
-                    syncResult.stats.numSkippedEntries++;
-                }else if (!dbHelper.isUploaded(getAccountSignature(), file.getPath(), file.lastModified())) {
-                    adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), Utils.pathJoin(getDirectoryPath(), bucketName));
-                }
-                ++fileIter;
-                if(!cursor.moveToNext()){
-                    break;
-                }
-            }
-        }catch (IOException e){
-            Log.e(DEBUG_TAG, "Failed to get cache file.", e);
-            Utils.utilsLogInfo(true, "Failed to get cache file: "+ e.toString());
-        }catch (Exception e){
-            Utils.utilsLogInfo(true, e.toString());
-        }
-        Utils.utilsLogInfo(true,"=======Have checked ["+Integer.toString(fileIter)+"/"+Integer.toString(fileNum)+"] files in "+bucketName+".===");
-        Utils.utilsLogInfo(true,"=======waitForUploads===");
-        adapter.waitForUploads();
-        adapter.checkUploadResult(this, syncResult);
-        if(cursor.isAfterLast()){
-            return null;
-        }
-        return cursor;
+    public String getMediaName(){
+        return "file";
     }
 
     public CacheItem<String> getLocalFileCache(String path, Comparator<String> comparator)throws IOException{
@@ -317,11 +225,12 @@ public class FileSync extends UploadSync {
         return res;
     }
 
-    private static class FileIterator{
+    private static class FileIterator extends UploadSync.SyncCursor{
         private final String bucketName;
         private final CacheItem<String> cache;
         private int index = 0;
         public FileIterator(String bucketName, CacheItem<String> cache){
+            super();
             this.bucketName = bucketName;
             this.cache = cache;
             this.index = 0;
@@ -343,6 +252,10 @@ public class FileSync extends UploadSync {
                 return index;
             }
             return 0;
+        }
+
+        public boolean isBeforeFirst(){
+            return false;
         }
 
         public boolean moveToNext(){
@@ -397,6 +310,24 @@ public class FileSync extends UploadSync {
                 return file.lastModified();
             }
             return 0;
+        }
+
+        public int compareToCacheOrder(SeafDirent item){
+            if(item == null){
+                return 1;
+            }
+            String fileName = getFileName();
+            if(fileName == null){
+                return -1;
+            }
+            return fileName.compareTo(item.name);
+        }
+
+        public int compareToCacheMore(SeafDirent item){
+            if(item == null){
+                return 1;
+            }
+            return (compareToCacheOrder(item) < 0 || item.size < getFileSize() && item.mtime < getFileModified())?1:0;
         }
 
         @Override

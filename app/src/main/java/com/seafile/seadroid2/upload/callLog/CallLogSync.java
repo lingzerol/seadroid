@@ -4,7 +4,9 @@ import android.Manifest;
 import android.content.SyncResult;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.Build;
 import android.provider.CallLog;
+import android.support.annotation.RequiresApi;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
@@ -18,6 +20,8 @@ import com.seafile.seadroid2.data.SeafDirent;
 import com.seafile.seadroid2.upload.UploadManager;
 import com.seafile.seadroid2.upload.UploadSync;
 import com.seafile.seadroid2.upload.UploadSyncAdapter;
+import com.seafile.seadroid2.upload.album.AlbumSync;
+import com.seafile.seadroid2.upload.file.FileSync;
 import com.seafile.seadroid2.util.Utils;
 
 import org.json.JSONObject;
@@ -29,6 +33,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,7 +42,8 @@ public class CallLogSync extends UploadSync {
     private static final String CACHE_NAME = "CallLogSync";
     private final String BASE_DIR = super.BASE_DIR + "/CallLog";
 
-    private Cursor previous = null;
+    private CallLogCursor previous = null;
+    private LinkedList<Integer> leftCallLogTypes = Lists.newLinkedList();
     private int synNum = 0;
 
     public CallLogSync(UploadSyncAdapter adapter) {
@@ -50,9 +56,8 @@ public class CallLogSync extends UploadSync {
 
     public void uploadContents(SyncResult syncResult, DataManager dataManager) throws SeafException, InterruptedException{
         Utils.utilsLogInfo(true, "========Starting to upload CallLog...");
-        synNum = 100;
         if(previous == null){
-            if(synNum > 10) {
+            if(synNum > CLEAR_CACHE_BOUNDARY) {
                 Utils.utilsLogInfo(true, "========Clear CallLog cache...");
                 dbHelper.cleanCache();
                 synNum = 0;
@@ -64,136 +69,62 @@ public class CallLogSync extends UploadSync {
             Utils.utilsLogInfo(true, "Read Call Log permission is not granted.");
             return;
         }
-        Cursor cursor = previous;
-        if(cursor == null) {
-            cursor = adapter.getContentResolver().query(CallLog.Calls.CONTENT_URI,
-                    null,
-                    null,
-                    null,
-                    CallLog.Calls.DATE + " ASC");
-        }
-        int fileIter = cursor.getPosition();
-        int fileNum = cursor.getCount();
-        Utils.utilsLogInfo(true, "========Found ["+ fileIter+"/"+fileNum+"] CallLogs ========");
-        List<File> callLogs = Lists.newArrayList();
-        try {
-            adapter.createDirectory(dataManager, getRepoID(), getDirectoryPath());
-            File repoFile = dataManager.getLocalRepoFile(getRepoName(), getRepoID(), getDirectoryPath());
-            if(!repoFile.exists() && !repoFile.mkdirs()){
-                Utils.utilsLogInfo(true, "Failed to create " + getAccountSignature() + "-" + getRepoName() + ":" + Utils.pathJoin(getDataPath(), BASE_DIR) + " dir");
-                Log.d(DEBUG_TAG, "Failed to create " + getAccountSignature() + "-" + getRepoName() + ":" + Utils.pathJoin(getDataPath(), BASE_DIR) + " dir");
+
+        if(previous != null){
+            Utils.utilsLogInfo(true, "========Continue uploading previous cursor========");
+            previous = (CallLogCursor) iterateCursor(syncResult, dataManager, previous);
+            if(isCancelled()){
+                Utils.utilsLogInfo(true, "========Cancel uploading========");
                 return;
             }
-            String cacheName = CACHE_NAME + "-" + repoID;
-            DirentCache cache = getCache(cacheName, getRepoID(),getDirectoryPath(), dataManager, new Comparator<SeafDirent>() {
-                @Override
-                public int compare(SeafDirent o1, SeafDirent o2) {
-                    String date1 = o1.name.substring(0, o1.name.lastIndexOf("."));
-                    String date2 = o2.name.substring(0, o2.name.lastIndexOf("."));
-                    long timestamp1 = getTimeStamp(date1);
-                    long timestamp2 = getTimeStamp(date2);
-                    if (timestamp1 < timestamp2) {
-                        return -1;
-                    } else if (timestamp1 == timestamp2) {
-                        return 0;
-                    }
-                    return 1;
-                }
-            });
-            if(cursor.isBeforeFirst() && !cursor.isAfterLast()){
-                cursor.moveToNext();
-            }
-            if (cache != null) {
-                int n = cache.getCount();
-                boolean done = false;
-                for (int i = 0; i < cache.getCount(); ++i) {
-                    if (cursor.isAfterLast()) {
-                        break;
-                    }
-                    String dateStr = cache.get(i).name;
-                    dateStr = dateStr.substring(0, dateStr.lastIndexOf("."));
-                    long timestamp = getTimeStamp(dateStr);
-                    while (!isCancelled() && cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE)) <= timestamp) {
-                        String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
-                        String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-                        long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
-                        int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
-                        int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
-                        Log.d(DEBUG_TAG, "readCallLog: number=" + number + ", date=" + date + ", type=" + type + ", duration=" + duration);
-                        String filePath = getFilePath(repoFile.getAbsolutePath(), date, number);
-                        if (date < timestamp && !dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                            File file = generateCallLog(filePath, name, number, date, type, duration);
-                            if (file != null && file.exists()) {
-                                callLogs.add(file);
-                                adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
-                            }else{
-                                syncResult.stats.numSkippedEntries++;
-                            }
-                        }
-                        ++fileIter;
-                        if(!cursor.moveToNext()){
-                            break;
-                        }
-                    }
-                    if (i == n - 1) {
-                        done = true;
-                    }
-                    if (isCancelled()) {
-                        break;
-                    }
-                }
-                if (done) {
-                    cache.delete();
-                }
-            }
-            while (!isCancelled() && !cursor.isAfterLast()) {
-                String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
-                String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-                long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
-                int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
-                int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
-                Log.d(DEBUG_TAG, "readCallLog: number=" + number + ", date=" + date + ", type=" + type + ", duration=" + duration);
-                String filePath = getFilePath(repoFile.getAbsolutePath(), date, number);
-                if (!dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                    File file = generateCallLog(filePath, name, number, date, type, duration);
-                    if (file != null && file.exists()) {
-                        callLogs.add(file);
-                        adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
-                    }else{
-                        syncResult.stats.numSkippedEntries++;
-                    }
-                }
-                ++fileIter;
-                if (!cursor.moveToNext()) {
-                    break;
-                }
-            }
-        }catch (IOException e){
-            Log.e(DEBUG_TAG, "Failed to get cache file.", e);
-            Utils.utilsLogInfo(true, "Failed to get cache file: "+ e.toString());
-        }catch (Exception e){
-            Utils.utilsLogInfo(true, e.toString());
         }
-        Utils.utilsLogInfo(true,"=======Have checked ["+Integer.toString(fileIter)+"/"+Integer.toString(fileNum)+"] callLogs======");
-        Utils.utilsLogInfo(true,"=======waitForUploads===");
-        adapter.waitForUploads();
-        adapter.checkUploadResult(this, syncResult);
-        if(cursor.isAfterLast()){
-            cursor.close();
-            previous = null;
-        }else{
-            previous = cursor;
+
+        if (isCancelled()){
+            Utils.utilsLogInfo(true, "========Cancel uploading========");
+            return;
         }
-        for(File file:callLogs){
-            if(file != null && file.exists()){
-                file.delete();
+        List<Integer> uploadCallLogTypes = leftCallLogTypes;
+        if(uploadCallLogTypes == null || uploadCallLogTypes.isEmpty()){
+            uploadCallLogTypes = Lists.newArrayList(
+                    CallLog.Calls.INCOMING_TYPE,
+                    CallLog.Calls.OUTGOING_TYPE,
+                    CallLog.Calls.MISSED_TYPE,
+                    CallLog.Calls.VOICEMAIL_TYPE,
+                    CallLog.Calls.REJECTED_TYPE,
+                    CallLog.Calls.BLOCKED_TYPE
+            );
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1){
+                uploadCallLogTypes.add(CallLog.Calls.ANSWERED_EXTERNALLY_TYPE);
+            }
+        }
+        leftCallLogTypes = Lists.newLinkedList();
+        leftCallLogTypes.addAll(uploadCallLogTypes);
+
+        File repoFile = dataManager.getLocalRepoFile(getRepoName(), getRepoID(), getDirectoryPath());
+        String repoPath = repoFile.getAbsolutePath();
+
+        for(Integer callType: uploadCallLogTypes){
+            leftCallLogTypes.removeFirst();
+            adapter.createDirectory(dataManager, getRepoID(), Utils.pathJoin(getDirectoryPath(), getCallLogTypeName(callType)));
+
+            Cursor cursor = adapter.getContentResolver().query(CallLog.Calls.CONTENT_URI,
+                    null,
+                    CallLog.Calls.TYPE + " = ? ",
+                    new String[]{String.valueOf(callType)},
+                    CallLog.Calls.DATE + " ASC");
+            CallLogCursor callLogCursor = new CallLogCursor(repoPath, getCallLogTypeName(callType), cursor);
+            if(cursor.getCount() > 0) {
+                previous = (CallLogCursor) iterateCursor(syncResult, dataManager, callLogCursor);
+            }else{
+                Utils.utilsLogInfo(true, "=======CallLog Sync: the call type " + getCallLogTypeName(callType) + " is cancelled because the directory is empty");
+                previous = null;
+            }
+            if(isCancelled()){
+                Utils.utilsLogInfo(true, "========Cancel uploading========");
+                break;
             }
         }
         Utils.utilsLogInfo(true, "========End uploading CallLog...");
-    }
-
-    private String getFilePath(String repoPath, long date, String number){
-        return Utils.pathJoin(repoPath, getDateStr(date) + "(" + number + ").json");
     }
 
     private long getTimeStamp(String dateStr){
@@ -216,6 +147,49 @@ public class CallLogSync extends UploadSync {
         return dateFormat.format(date);
     }
 
+    @Override
+    protected Comparator<SeafDirent> getComparator() {
+        return new Comparator<SeafDirent>() {
+            @Override
+            public int compare(SeafDirent o1, SeafDirent o2) {
+                String date1 = o1.name.substring(0, o1.name.lastIndexOf("."));
+                String date2 = o2.name.substring(0, o2.name.lastIndexOf("."));
+                long timestamp1 = getTimeStamp(date1);
+                long timestamp2 = getTimeStamp(date2);
+                if (timestamp1 < timestamp2) {
+                    return -1;
+                } else if (timestamp1 == timestamp2) {
+                    return 0;
+                }
+                return 1;
+            }
+        };
+    }
+
+    @Override
+    public String getMediaName() {
+        return "CallLog";
+    }
+
+    private String getCallLogTypeName(int type){
+        if(type == CallLog.Calls.INCOMING_TYPE){
+            return "Incoming";
+        }else if(type == CallLog.Calls.OUTGOING_TYPE){
+            return "Outgoing";
+        }else if(type == CallLog.Calls.MISSED_TYPE){
+            return "Missed";
+        }else if(type == CallLog.Calls.VOICEMAIL_TYPE){
+            return "VoiceMail";
+        }else if(type == CallLog.Calls.REJECTED_TYPE){
+            return "Rejected";
+        }else if(type == CallLog.Calls.BLOCKED_TYPE){
+            return "Blocked";
+        }else if(type == CallLog.Calls.ANSWERED_EXTERNALLY_TYPE){
+            return "Answered externally";
+        }
+        return "Unknown";
+    }
+
     private File generateCallLog(String path, String name, String number, long date, int type, int duration){
         try {
             JSONObject jsonObject = new JSONObject();
@@ -223,23 +197,7 @@ public class CallLogSync extends UploadSync {
             jsonObject.put("Number", number);
             jsonObject.put("TimeStamp", date);
             jsonObject.put("Date", getDateStr(date));
-            if(type == CallLog.Calls.INCOMING_TYPE){
-                jsonObject.put("CallType", "Incoming");
-            }else if(type == CallLog.Calls.OUTGOING_TYPE){
-                jsonObject.put("CallType", "Outgoing");
-            }else if(type == CallLog.Calls.MISSED_TYPE){
-                jsonObject.put("CallType", "Missed");
-            }else if(type == CallLog.Calls.VOICEMAIL_TYPE){
-                jsonObject.put("CallType", "VoiceMail");
-            }else if(type == CallLog.Calls.REJECTED_TYPE){
-                jsonObject.put("CallType", "Rejected");
-            }else if(type == CallLog.Calls.BLOCKED_TYPE){
-                jsonObject.put("CallType", "Blocked");
-            }else if(type == CallLog.Calls.ANSWERED_EXTERNALLY_TYPE){
-                jsonObject.put("CallType", "Answered externally");
-            }else{
-                jsonObject.put("CallType", "Unknown");
-            }
+            jsonObject.put("CallType", getCallLogTypeName(type));
             FileWriter fileWriter = new FileWriter(path, false);
             fileWriter.write(jsonObject.toString(4));
             fileWriter.close();
@@ -249,5 +207,145 @@ public class CallLogSync extends UploadSync {
             Log.d(DEBUG_TAG, "Failed to create callLog file " + path + ": " + e.toString());
         }
         return null;
+    }
+
+    private class CallLogCursor extends UploadSync.SyncCursor{
+        private String repoPath = null;
+        private String bucketName = null;
+        private Cursor cursor = null;
+        private List<File> localFiles = Lists.newArrayList();
+
+        public CallLogCursor(String repoPath, String bucketName, Cursor cursor){
+            this.repoPath = repoPath;
+            this.bucketName = bucketName;
+            this.cursor = cursor;
+            File localDir = new File(Utils.pathJoin(repoPath, bucketName));
+            if(!localDir.exists()){
+                localDir.mkdirs();
+            }
+        }
+
+        public String getBucketName(){
+            return bucketName;
+        }
+
+        public int getCount(){
+            if(cursor == null){
+                return 0;
+            }
+            return cursor.getCount();
+        }
+
+        public int getPosition(){
+            if(cursor == null){
+                return 0;
+            }
+            return cursor.getPosition();
+        }
+
+        public boolean isBeforeFirst(){
+            return cursor.isBeforeFirst();
+        }
+
+        public boolean moveToNext(){
+            if(cursor == null){
+                return false;
+            }
+            return cursor.moveToNext();
+        }
+
+        public boolean isAfterLast(){
+            if(cursor == null){
+                return false;
+            }
+            return cursor.isAfterLast();
+        }
+
+        public String getFilePath(){
+            if(cursor == null || repoPath == null || bucketName == null){
+                return null;
+            }
+            String fileName = getFileName();
+            if(fileName == null){
+                return null;
+            }
+            return Utils.pathJoin(repoPath, bucketName, fileName);
+        }
+
+        public String getFileName(){
+            if(cursor == null){
+                return null;
+            }
+            String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
+            long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
+            return getDateStr(date) + "(" + number + ").json";
+        }
+
+        public File getFile(){
+            if(cursor == null){
+                return null;
+            }
+            String filePath = getFilePath();
+            if(filePath == null){
+                return null;
+            }
+            String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
+            String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
+            long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
+            int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
+            int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
+            File file = generateCallLog(filePath, name, number, date, type, duration);
+            localFiles.add(file);
+            return file;
+        }
+
+        public long getFileSize(){
+            File file = getFile();
+            if(file == null){
+                return 0;
+            }
+            return file.length();
+        }
+
+        public long getFileModified(){
+            if(cursor == null){
+                return 0;
+            }
+            return cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
+        }
+
+        public void postProcess(){
+            for(File file:localFiles){
+                if(file != null && file.exists()){
+                    file.delete();
+                }
+            }
+            localFiles.clear();
+        }
+
+        @Override
+        public int compareToCacheOrder(SeafDirent item) {
+            if(item == null){
+                return 1;
+            }
+            if(cursor == null){
+                return -1;
+            }
+            long date = getFileModified();
+            String dateStr = item.name;
+            dateStr = dateStr.substring(0, dateStr.lastIndexOf("."));
+            long timestamp = getTimeStamp(dateStr);
+            if(date < timestamp){
+                return -1;
+            }else if(date == timestamp){
+                return 0;
+            }
+            return 1;
+        }
+
+        @Override
+        public int compareToCacheMore(SeafDirent item) {
+            return (compareToCacheOrder(item) < 0)?1:0;
+        }
     }
 }

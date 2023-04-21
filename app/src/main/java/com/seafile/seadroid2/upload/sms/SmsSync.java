@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.SyncResult;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.os.Build;
+import android.provider.CallLog;
 import android.provider.Telephony;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
@@ -19,6 +21,7 @@ import com.seafile.seadroid2.data.SeafDirent;
 import com.seafile.seadroid2.upload.UploadManager;
 import com.seafile.seadroid2.upload.UploadSync;
 import com.seafile.seadroid2.upload.UploadSyncAdapter;
+import com.seafile.seadroid2.upload.callLog.CallLogSync;
 import com.seafile.seadroid2.util.Utils;
 
 import org.json.JSONObject;
@@ -32,6 +35,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,7 +44,8 @@ public class SmsSync extends UploadSync {
     private static final String CACHE_NAME = "SmsSync";
     private final String BASE_DIR = super.BASE_DIR + "/Sms";
 
-    private Cursor previous = null;
+    private SmsCursor previous = null;
+    private LinkedList<Integer> leftSmsTypes = Lists.newLinkedList();
     private int synNum = 0;
 
     public SmsSync(UploadSyncAdapter adapter) {
@@ -51,145 +56,73 @@ public class SmsSync extends UploadSync {
         return Utils.pathJoin(getDataPath(), BASE_DIR);
     }
 
-    public void uploadContents(SyncResult syncResult, DataManager dataManager) throws SeafException, InterruptedException{
+    @Override
+    public String getMediaName() {
+        return "Sms";
+    }
+
+    public void uploadContents(SyncResult syncResult, DataManager dataManager) throws SeafException, InterruptedException {
         Utils.utilsLogInfo(true, "========Starting to upload Sms...");
-        synNum = 100;
-        if(previous == null){
-            if(synNum > 10) {
+        if (previous == null) {
+            if (synNum > CLEAR_CACHE_BOUNDARY) {
                 Utils.utilsLogInfo(true, "========Clear Sms cache...");
                 dbHelper.cleanCache();
                 synNum = 0;
-            }else {
+            } else {
                 ++synNum;
             }
         }
-        if (ContextCompat.checkSelfPermission(adapter.getContext(), Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED){
+        if (ContextCompat.checkSelfPermission(adapter.getContext(), Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
             Utils.utilsLogInfo(true, "Read Sms permission is not granted.");
             return;
         }
-        Cursor cursor = previous;
-        if(cursor == null) {
-            cursor = adapter.getContentResolver().query(Telephony.Sms.CONTENT_URI,
-                    null,
-                    null,
-                    null,
-                    Telephony.Sms.DATE + " ASC");
-        }
-        int fileIter = cursor.getPosition();
-        int fileNum = cursor.getCount();
-        Utils.utilsLogInfo(true, "========Found ["+ fileIter+"/"+fileNum+"] Sms ========");
-        List<File> SmsList = Lists.newArrayList();
-        try {
-            adapter.createDirectory(dataManager, getRepoID(), getDirectoryPath());
-            File repoFile = dataManager.getLocalRepoFile(getRepoName(), getRepoID(), getDirectoryPath());
-            if(!repoFile.exists() && !repoFile.mkdirs()){
-                Utils.utilsLogInfo(true, "Failed to create " + getAccountSignature() + "-" + getRepoName() + ":" + Utils.pathJoin(getDataPath(), BASE_DIR) + " dir");
-                Log.d(DEBUG_TAG, "Failed to create " + getAccountSignature() + "-" + getRepoName() + ":" + Utils.pathJoin(getDataPath(), BASE_DIR) + " dir");
+
+        if (previous != null) {
+            Utils.utilsLogInfo(true, "========Continue uploading previous cursor========");
+            previous = (SmsCursor) iterateCursor(syncResult, dataManager, previous);
+            if (isCancelled()) {
+                Utils.utilsLogInfo(true, "========Cancel uploading========");
                 return;
             }
-            String cacheName = CACHE_NAME + "-" + repoID;
-            DirentCache cache = getCache(cacheName, getRepoID(),getDirectoryPath(), dataManager, new Comparator<SeafDirent>() {
-                @Override
-                public int compare(SeafDirent o1, SeafDirent o2) {
-                    String date1 = o1.name.substring(0, o1.name.lastIndexOf("."));
-                    String date2 = o2.name.substring(0, o2.name.lastIndexOf("."));
-                    long timestamp1 = getTimeStamp(date1);
-                    long timestamp2 = getTimeStamp(date2);
-                    if (timestamp1 < timestamp2) {
-                        return -1;
-                    } else if (timestamp1 == timestamp2) {
-                        return 0;
-                    }
-                    return 1;
-                }
-            });
-            if(cursor.isBeforeFirst() && !cursor.isAfterLast()){
-                cursor.moveToNext();
-            }
-            if (cache != null) {
-                int n = cache.getCount();
-                boolean done = false;
-                for (int i = 0; i < cache.getCount(); ++i) {
-                    if (cursor.isAfterLast()) {
-                        break;
-                    }
-                    String dateStr = cache.get(i).name;
-                    dateStr = dateStr.substring(0, dateStr.lastIndexOf("."));
-                    long timestamp = getTimeStamp(dateStr);
-                    while (!isCancelled() && cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE)) <= timestamp) {
-                        String address = cursor.getString(cursor.getColumnIndex(Telephony.Sms.ADDRESS));
-                        String body = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
-                        String subject = cursor.getString(cursor.getColumnIndex(Telephony.Sms.SUBJECT));
-                        long date = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
-                        int type = cursor.getInt(cursor.getColumnIndex(Telephony.Sms.TYPE));
-                        String filePath = getFilePath(repoFile.getAbsolutePath(), date, address);
-                        if (date < timestamp && !dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                            File file = generateSms(filePath, address, subject, body, date, type);
-                            if (file != null && file.exists()) {
-                                SmsList.add(file);
-                                adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
-                            }else{
-                                syncResult.stats.numSkippedEntries++;
-                            }
-                        }
-                        ++fileIter;
-                        if(!cursor.moveToNext()){
-                            break;
-                        }
-                    }
-                    if (i == n - 1) {
-                        done = true;
-                    }
-                    if (isCancelled()) {
-                        break;
-                    }
-                }
-                if (done) {
-                    cache.delete();
-                }
-            }
-            while (!isCancelled() && !cursor.isAfterLast()) {
-                String address = cursor.getString(cursor.getColumnIndex(Telephony.Sms.ADDRESS));
-                String body = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
-                String subject = cursor.getString(cursor.getColumnIndex(Telephony.Sms.SUBJECT));
-                long date = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
-                int type = cursor.getInt(cursor.getColumnIndex(Telephony.Sms.TYPE));
-                String filePath = getFilePath(repoFile.getAbsolutePath(), date, address);
-                if (!dbHelper.isUploaded(getAccountSignature(), filePath)) {
-                    File file = generateSms(filePath, address, subject, body, date, type);
-                    if (file != null && file.exists()) {
-                        SmsList.add(file);
-                        adapter.uploadFile(dataManager, file, getRepoID(), getRepoName(), getDirectoryPath());
-                    }else{
-                        syncResult.stats.numSkippedEntries++;
-                    }
-                }
-                ++fileIter;
-                if (!cursor.moveToNext()) {
-                    break;
-                }
-            }
-        }catch (IOException e){
-            Log.e(DEBUG_TAG, "Failed to get cache file.", e);
-            Utils.utilsLogInfo(true, "Failed to get cache file: "+ e.toString());
-        }catch (Exception e){
-            Utils.utilsLogInfo(true, e.toString());
         }
-        Utils.utilsLogInfo(true,"=======Have checked ["+Integer.toString(fileIter)+"/"+Integer.toString(fileNum)+"] Sms======");
-        Utils.utilsLogInfo(true,"=======waitForUploads===");
-        adapter.waitForUploads();
-        adapter.checkUploadResult(this, syncResult);
-        if(cursor.isAfterLast()){
-            cursor.close();
-            previous = null;
-        }else{
-            previous = cursor;
+
+        List<Integer> uploadSmsTypes = leftSmsTypes;
+        if (uploadSmsTypes == null || uploadSmsTypes.isEmpty()) {
+            uploadSmsTypes = Lists.newArrayList(
+                    Telephony.Sms.MESSAGE_TYPE_INBOX,
+                    Telephony.Sms.MESSAGE_TYPE_OUTBOX,
+                    Telephony.Sms.MESSAGE_TYPE_DRAFT,
+                    Telephony.Sms.MESSAGE_TYPE_FAILED,
+                    Telephony.Sms.MESSAGE_TYPE_SENT,
+                    Telephony.Sms.MESSAGE_TYPE_QUEUED
+            );
         }
-        for(File file:SmsList){
-            if(file != null && file.exists()){
-                file.delete();
+        leftSmsTypes = Lists.newLinkedList();
+        leftSmsTypes.addAll(uploadSmsTypes);
+
+        File repoFile = dataManager.getLocalRepoFile(getRepoName(), getRepoID(), getDirectoryPath());
+        String repoPath = repoFile.getAbsolutePath();
+        for (Integer smsType : uploadSmsTypes) {
+            leftSmsTypes.removeFirst();
+            adapter.createDirectory(dataManager, getRepoID(), Utils.pathJoin(getDirectoryPath(), getSmsTypeName(smsType)));
+            Cursor cursor = adapter.getContentResolver().query(Telephony.Sms.CONTENT_URI,
+                    null,
+                    Telephony.Sms.TYPE + " = ? ",
+                    new String[]{String.valueOf(smsType)},
+                    Telephony.Sms.DATE + " ASC");
+            SmsCursor smsCursor = new SmsCursor(repoPath, getSmsTypeName(smsType), cursor);
+            if(cursor.getCount() > 0) {
+                previous = (SmsCursor) iterateCursor(syncResult, dataManager, smsCursor);
+            }else{
+                Utils.utilsLogInfo(true, "=======Sms Sync: the sms type " + getSmsTypeName(smsType) + " is cancelled because the directory is empty");
+                previous = null;
+            }
+            if(isCancelled()){
+                Utils.utilsLogInfo(true, "========Cancel uploading========");
+                break;
             }
         }
+
         Utils.utilsLogInfo(true, "========End uploading sms...");
     }
 
@@ -217,6 +150,27 @@ public class SmsSync extends UploadSync {
         return dateFormat.format(date);
     }
 
+    private String getSmsTypeName(int type){
+        switch(type){
+            case Telephony.Sms.MESSAGE_TYPE_INBOX:
+                return "Inbox";
+            case Telephony.Sms.MESSAGE_TYPE_OUTBOX:
+                return "Outbox";
+            case Telephony.Sms.MESSAGE_TYPE_ALL:
+                return "All";
+            case Telephony.Sms.MESSAGE_TYPE_DRAFT:
+                return "Draft";
+            case Telephony.Sms.MESSAGE_TYPE_FAILED:
+                return "Failed";
+            case Telephony.Sms.MESSAGE_TYPE_SENT:
+                return "Sent";
+            case Telephony.Sms.MESSAGE_TYPE_QUEUED:
+                return "Queued";
+            default:
+                return "Unknown";
+        }
+    }
+
     private File generateSms(String path, String address, String subject, String body, long date, int type){
         try {
 //            if(subject != null){
@@ -232,32 +186,7 @@ public class SmsSync extends UploadSync {
             jsonObject.put("Body", body);
             jsonObject.put("TimeStamp", date);
             jsonObject.put("Date", getDateStr(date));
-            switch(type){
-                case Telephony.Sms.MESSAGE_TYPE_INBOX:
-                    jsonObject.put("SmsType", "Inbox");
-                    break;
-                case Telephony.Sms.MESSAGE_TYPE_OUTBOX:
-                    jsonObject.put("SmsType", "Outbox");
-                    break;
-                case Telephony.Sms.MESSAGE_TYPE_ALL:
-                    jsonObject.put("SmsType", "All");
-                    break;
-                case Telephony.Sms.MESSAGE_TYPE_DRAFT:
-                    jsonObject.put("SmsType", "Draft");
-                    break;
-                case Telephony.Sms.MESSAGE_TYPE_FAILED:
-                    jsonObject.put("SmsType", "Failed");
-                    break;
-                case Telephony.Sms.MESSAGE_TYPE_SENT:
-                    jsonObject.put("SmsType", "Sent");
-                    break;
-                case Telephony.Sms.MESSAGE_TYPE_QUEUED:
-                    jsonObject.put("SmsType", "Queued");
-                    break;
-                default:
-                    jsonObject.put("SmsType", "Unknown");
-                    break;
-            }
+            jsonObject.put("SmsType", getSmsTypeName(type));
             FileWriter fileWriter = new FileWriter(path, false);
             fileWriter.write(jsonObject.toString(4));
             fileWriter.close();
@@ -267,5 +196,165 @@ public class SmsSync extends UploadSync {
             Log.d(DEBUG_TAG, "Failed to create sms file " + path + ": " + e.toString());
         }
         return null;
+    }
+
+    @Override
+    protected Comparator<SeafDirent> getComparator() {
+        return new Comparator<SeafDirent>() {
+            @Override
+            public int compare(SeafDirent o1, SeafDirent o2) {
+                String date1 = o1.name.substring(0, o1.name.lastIndexOf("."));
+                String date2 = o2.name.substring(0, o2.name.lastIndexOf("."));
+                long timestamp1 = getTimeStamp(date1);
+                long timestamp2 = getTimeStamp(date2);
+                if (timestamp1 < timestamp2) {
+                    return -1;
+                } else if (timestamp1 == timestamp2) {
+                    return 0;
+                }
+                return 1;
+            }
+        };
+    }
+
+
+    private class SmsCursor extends UploadSync.SyncCursor{
+        private String repoPath = null;
+        private String bucketName = null;
+        private Cursor cursor = null;
+        private List<File> localFiles = Lists.newArrayList();
+
+        public SmsCursor(String repoPath, String bucketName, Cursor cursor){
+            this.repoPath = repoPath;
+            this.bucketName = bucketName;
+            this.cursor = cursor;
+            File localDir = new File(Utils.pathJoin(repoPath, bucketName));
+            if(!localDir.exists()){
+                localDir.mkdirs();
+            }
+        }
+
+        public String getBucketName(){
+            return bucketName;
+        }
+
+        public int getCount(){
+            if(cursor == null){
+                return 0;
+            }
+            return cursor.getCount();
+        }
+
+        public int getPosition(){
+            if(cursor == null){
+                return 0;
+            }
+            return cursor.getPosition();
+        }
+
+        public boolean isBeforeFirst(){
+            return cursor.isBeforeFirst();
+        }
+
+        public boolean moveToNext(){
+            if(cursor == null){
+                return false;
+            }
+            return cursor.moveToNext();
+        }
+
+        public boolean isAfterLast(){
+            if(cursor == null){
+                return false;
+            }
+            return cursor.isAfterLast();
+        }
+
+        public String getFilePath(){
+            if(cursor == null || repoPath == null || bucketName == null){
+                return null;
+            }
+            String fileName = getFileName();
+            if(fileName == null){
+                return null;
+            }
+            return Utils.pathJoin(repoPath, bucketName, fileName);
+        }
+
+        public String getFileName(){
+            if(cursor == null){
+                return null;
+            }
+            String address = cursor.getString(cursor.getColumnIndex(Telephony.Sms.ADDRESS));
+            long date = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
+            return getDateStr(date) + "(" + address + ").json";
+        }
+
+        public File getFile(){
+            if(cursor == null){
+                return null;
+            }
+            String filePath = getFilePath();
+            if(filePath == null){
+                return null;
+            }
+            String address = cursor.getString(cursor.getColumnIndex(Telephony.Sms.ADDRESS));
+            String body = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
+            String subject = cursor.getString(cursor.getColumnIndex(Telephony.Sms.SUBJECT));
+            long date = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
+            int type = cursor.getInt(cursor.getColumnIndex(Telephony.Sms.TYPE));
+            File file = generateSms(filePath, address, subject, body, date, type);
+            localFiles.add(file);
+            return file;
+        }
+
+        public long getFileSize(){
+            File file = getFile();
+            if(file == null){
+                return 0;
+            }
+            return file.length();
+        }
+
+        public long getFileModified(){
+            if(cursor == null){
+                return 0;
+            }
+            return cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
+        }
+
+        public void postProcess(){
+            for(File file:localFiles){
+                if(file != null && file.exists()){
+                    file.delete();
+                }
+            }
+            localFiles.clear();
+        }
+
+        @Override
+        public int compareToCacheOrder(SeafDirent item) {
+            if(item == null){
+                return 1;
+            }
+            if(cursor == null){
+                return -1;
+            }
+            long date = getFileModified();
+            String dateStr = item.name;
+            dateStr = dateStr.substring(0, dateStr.lastIndexOf("."));
+            long timestamp = getTimeStamp(dateStr);
+            if(date < timestamp){
+                return -1;
+            }else if(date == timestamp){
+                return 0;
+            }
+            return 1;
+        }
+
+        @Override
+        public int compareToCacheMore(SeafDirent item) {
+            return (compareToCacheOrder(item) < 0)?1:0;
+        }
     }
 }

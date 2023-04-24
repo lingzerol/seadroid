@@ -55,7 +55,7 @@ public class LoopImagesWidgetService extends Service {
     private static final int CHECKT_DOWNLOAD_STATE = 1001;
     private static final int CHECKT_DOWNLOAD_STATE_DURATION = 5*1000;
     private static final int UPDATE_IMAGE_DELAY = 60 * 60 * 1000;
-    private static final int ONCE_UPLOAD_IMAGE_NUM = 3;
+    private static final int ONCE_UPLOAD_IMAGE_NUM = 1;
     private static final int ONCE_REMOVE_IMAGE_NUM = 3*ONCE_UPLOAD_IMAGE_NUM;
     private static final int MAX_ACCESS_TIME = 5;
     private static final int MAX_DOWNLOAD_IMAGE_NUM = 500;
@@ -73,7 +73,6 @@ public class LoopImagesWidgetService extends Service {
     private Object updateWidgetInfoLock = new Object();
     private Object updateWidgetImageLock = new Object();
     private LinkedList<TaskInfo> tasksInProgress = Lists.newLinkedList();
-    private Random rand = new Random();
     private LoopImagesDBHelper dbHelper = LoopImagesDBHelper.getInstance();
     private ScreenListener screenListener;
 
@@ -397,6 +396,7 @@ public class LoopImagesWidgetService extends Service {
                 }
                 int n = appWidgetIds.length;
                 for (int appWidgetId : appWidgetIds) {
+                    Random rand = new Random();
 //                Utils.utilsLogInfo(true, "=======Loopimages widget " + appWidgetId + " update start.");
                     boolean enableDownload = Utils.isWiFiOn() || LoopImagesWidgetConfigureActivity.getDataPlanAllowed(appWidgetId);
                     if (Utils.isNetworkOn() && enableDownload && tasksInProgress.size() < ONCE_UPLOAD_IMAGE_NUM * 2 * n) {

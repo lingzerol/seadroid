@@ -190,14 +190,13 @@ public class CallLogSync extends UploadSync {
         return "Unknown";
     }
 
-    private File generateCallLog(String path, String name, String number, long date, int type, int duration){
+    private File generateCallLog(String path, JSONObject jsonObject, long timestamp, int type){
+        if(jsonObject == null){
+            return null;
+        }
         try {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("Name", name);
-            jsonObject.put("Number", number);
-            jsonObject.put("TimeStamp", date);
-            jsonObject.put("Date", getDateStr(date));
-            jsonObject.put("CallType", getCallLogTypeName(type));
+            jsonObject.put("Date", getDateStr(timestamp));
+            jsonObject.put("CallTypeName", getCallLogTypeName(type));
             FileWriter fileWriter = new FileWriter(path, false);
             fileWriter.write(jsonObject.toString(4));
             fileWriter.close();
@@ -289,12 +288,16 @@ public class CallLogSync extends UploadSync {
             if(filePath == null){
                 return null;
             }
-            String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
-            String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-            long date = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
+            long timestamp = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
             int type = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.TYPE));
-            int duration = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.DURATION));
-            File file = generateCallLog(filePath, name, number, date, type, duration);
+            JSONObject jsonObject = UploadSync.SyncCursor.ToJson(cursor);
+            if(jsonObject == null){
+                return null;
+            }
+            File file = generateCallLog(filePath, jsonObject, timestamp, type);
+            if(file == null){
+                return null;
+            }
             localFiles.add(file);
             return file;
         }

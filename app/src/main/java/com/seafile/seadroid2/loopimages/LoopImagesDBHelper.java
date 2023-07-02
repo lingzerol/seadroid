@@ -148,6 +148,26 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         return id;
     }
 
+    public int getDirInfoIDFromPath(String accountSignature, String repoID, String dirPath){
+        Cursor c = database.query(
+                DIR_INFO_TABLE_NAME,
+                DirInfoProjection,
+                DIR_INFO_COLUMN_ACCOUNT_SIGNATURE + " = ? and " + DIR_INFO_COLUMN_REPO_ID + " = ? and " + DIR_INFO_COLUMN_DIR_PATH + " = ?" ,
+                new String[] {accountSignature, repoID, dirPath },
+                null,   // don't group the rows
+                null,   // don't filter by row groups
+                null    // The sort order
+        );
+        if(c.getCount() == 0){
+            c.close();
+            return -1;
+        }
+        c.moveToNext();
+        int id = c.getInt(c.getColumnIndex(DIR_INFO_COLUMN_ID));
+        c.close();
+        return id;
+    }
+
     public int addDirInfo(String accountSignature, String repoID, String repoName, String dirID, String dirPath){
         int id = getDirInfoID(accountSignature, repoID, dirID);
         if(id < 0){
@@ -386,6 +406,25 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         ContentValues value = new ContentValues();
         value.put(IMAGE_INFO_COLUMN_PRESERVE, preserve?1:0);
         database.update(IMAGE_INFO_TABLE_NAME, value, IMAGE_INFO_COLUMN_DIR_INFO_ID + " = ? ", new String[]{Integer.toString(dirInfoID)});
+    }
+
+    public int getDirImageNum(String accountSignature, String repoID, String dirID){
+        int dirInfoID = getDirInfoID(accountSignature, repoID, dirID);
+        if(dirInfoID < 0){
+            return 0;
+        }
+        Cursor c = database.query(
+                IMAGE_INFO_TABLE_NAME,
+                new String[]{IMAGE_INFO_COLUMN_ID},
+                IMAGE_INFO_COLUMN_DIR_INFO_ID + " = ? ",
+                new String[] { Integer.toString(dirInfoID)},
+                null,   // don't group the rows
+                null,   // don't filter by row groups
+                null    // The sort order
+        );
+        int count = c.getCount();
+        c.close();
+        return count;
     }
 
 //    public void setImagePreserve(int dirInfoID, String filePath, boolean preserve){
@@ -634,6 +673,13 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         if(dirInfoID < 0){
             return dirInfoID;
         }
+        if(widgetContainDir(widgetID, dirInfoID)){
+            return dirInfoID;
+        }
+        return -1;
+    }
+
+    public boolean widgetContainDir(int widgetID, int dirInfoID){
         Cursor c = database.query(
                 WIDGET_IMAGE_TABLE_NAME,
                 WidgetImageProjection,
@@ -645,10 +691,10 @@ public class LoopImagesDBHelper extends SQLiteOpenHelper {
         );
         if(c.getCount() == 0){
             c.close();
-            return -1;
+            return false;
         }
         c.close();
-        return dirInfoID;
+        return true;
     }
 
     private boolean hasWidgetExistsDir(int dirInfoID){

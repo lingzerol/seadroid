@@ -171,22 +171,13 @@ public class SmsSync extends UploadSync {
         }
     }
 
-    private File generateSms(String path, String address, String subject, String body, long date, int type){
+    private File generateSms(String path, JSONObject jsonObject, long timestamp, int type){
+        if(jsonObject == null){
+            return null;
+        }
         try {
-//            if(subject != null){
-//                subject = new String(subject.getBytes(), StandardCharsets.UTF_8);
-//            }
-//            if(body != null){
-//                body = new String(body.getBytes(), StandardCharsets.UTF_8);
-//            }
-//            Utils.utilsLogInfo(true, "Sms content: " + address + " " + subject + " " + body + " " + Long.toString(date) + " " + Integer.toString(type));
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("Address", address);
-            jsonObject.put("Subject", subject);
-            jsonObject.put("Body", body);
-            jsonObject.put("TimeStamp", date);
-            jsonObject.put("Date", getDateStr(date));
-            jsonObject.put("SmsType", getSmsTypeName(type));
+            jsonObject.put("Date", getDateStr(timestamp));
+            jsonObject.put("SmsTypeName", getSmsTypeName(type));
             FileWriter fileWriter = new FileWriter(path, false);
             fileWriter.write(jsonObject.toString(4));
             fileWriter.close();
@@ -298,12 +289,16 @@ public class SmsSync extends UploadSync {
             if(filePath == null){
                 return null;
             }
-            String address = cursor.getString(cursor.getColumnIndex(Telephony.Sms.ADDRESS));
-            String body = cursor.getString(cursor.getColumnIndex(Telephony.Sms.BODY));
-            String subject = cursor.getString(cursor.getColumnIndex(Telephony.Sms.SUBJECT));
-            long date = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
+            long timestamp = cursor.getLong(cursor.getColumnIndex(Telephony.Sms.DATE));
             int type = cursor.getInt(cursor.getColumnIndex(Telephony.Sms.TYPE));
-            File file = generateSms(filePath, address, subject, body, date, type);
+            JSONObject jsonObject = UploadSync.SyncCursor.ToJson(cursor);
+            if(jsonObject == null){
+                return null;
+            }
+            File file = generateSms(filePath, jsonObject, timestamp, type);
+            if(file == null){
+                return null;
+            }
             localFiles.add(file);
             return file;
         }

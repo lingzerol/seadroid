@@ -67,7 +67,9 @@ public abstract class CacheItem<T> {
         if(caches == null){
             return;
         }
-        caches.sort(comp);
+        if(comp != null) {
+            caches.sort(comp);
+        }
         FileOutputStream os = null;
         FileOutputStream configOs = null;
         positions = Lists.newArrayList();

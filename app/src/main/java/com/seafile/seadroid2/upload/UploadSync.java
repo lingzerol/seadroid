@@ -1,6 +1,7 @@
 package com.seafile.seadroid2.upload;
 
 import android.content.SyncResult;
+import android.database.Cursor;
 import android.util.Log;
 
 import com.seafile.seadroid2.SeadroidApplication;
@@ -19,6 +20,7 @@ import com.seafile.seadroid2.util.SyncStatus;
 import com.seafile.seadroid2.util.Utils;
 
 import org.greenrobot.eventbus.EventBus;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,9 +32,9 @@ public abstract class UploadSync {
     private static final String DEBUG_TAG = "UploadSync";
     protected final String BASE_DIR = SeafileLog.getSystemModel();
     private static final String CACHE_NAME = "UploadSync";
-    protected static int CLEAR_CACHE_BOUNDARY = 30;
-    protected static int WAIT_FOR_TIMEOUT = 10000;
-    protected static int WAIT_TIME = 1000;
+    protected static final int CLEAR_CACHE_BOUNDARY = 5;
+    protected static final int WAIT_FOR_TIMEOUT = 10000;
+    protected static final int WAIT_TIME = 1000;
 
     protected int syncType;
     protected UploadDBHelper dbHelper = null;
@@ -349,5 +351,39 @@ public abstract class UploadSync {
         public abstract int compareToCacheOrder(SeafDirent item);
 
         public abstract int compareToCacheMore(SeafDirent item);
+
+        public static JSONObject ToJson(Cursor cursor){
+            if(cursor == null || cursor.isAfterLast() || cursor.isBeforeFirst() || cursor.isClosed()){
+                return null;
+            }
+            try{
+                JSONObject jsonObject = new JSONObject();
+                for(int i=0;i<cursor.getColumnCount();++i){
+                    int columnType = cursor.getType(i);
+                    String columnName = cursor.getColumnName(i);
+                    switch (columnType){
+                        case Cursor.FIELD_TYPE_INTEGER:
+                            jsonObject.put(columnName, cursor.getLong(i));
+                            break;
+                        case Cursor.FIELD_TYPE_FLOAT:
+                            jsonObject.put(columnName, cursor.getFloat(i));
+                            break;
+                        case Cursor.FIELD_TYPE_STRING:
+                            jsonObject.put(columnName, cursor.getString(i));
+                            break;
+                        case Cursor.FIELD_TYPE_BLOB:
+                            jsonObject.put(columnName, cursor.getBlob(i));
+                            break;
+                        case Cursor.FIELD_TYPE_NULL:
+                            break;
+                    }
+                }
+                return jsonObject;
+            }catch(Exception e){
+                Utils.utilsLogInfo(true, "Failed to parse cursor to json: " + e.toString());
+                Log.d(DEBUG_TAG, "Failed to parse cursor to json: " + e.toString());
+            }
+            return null;
+        }
     }
 }
